@@ -158,10 +158,10 @@ namespace ArtlistFootageScraper
 
             // Wait for the download to start
             WaitForDownloadStart(downloadDirectory);
-            Console.WriteLine("Download Started");
+            _logger.LogInformation("Download Started");
 
             WaitForDownloadCompletion(downloadDirectory);
-            Console.WriteLine("Download Completed");
+            _logger.LogInformation("Download Completed");
         }
 
         public static void WaitForDownloadStart(string directory)
