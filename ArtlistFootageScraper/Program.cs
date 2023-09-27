@@ -69,7 +69,7 @@ namespace ArtlistFootageScraper
             options.AddUserProfilePreference("download.directory_upgrade", true);
             options.AddUserProfilePreference("safebrowsing.enabled", true);
             options.AcceptInsecureCertificates = true;
-            options.AddArgument("--headless");
+            //options.AddArgument("--headless");
 
             return options;
         }
