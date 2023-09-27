@@ -139,10 +139,14 @@ namespace ArtlistFootageScraper
             _driver.Navigate().GoToUrl(href);
 
             // Initiate download
-            var downloadButton = _wait.Until(d =>
+            IWebElement? downloadButton = null;
+
+            downloadButton = _wait.Until(d =>
             {
                 var elements = d.FindElements(By.XPath("//button[@aria-label='Download']"));
-                return elements.Any(e => e.Displayed && e.Enabled) ? elements.First() : null;
+                var checkButton = d.FindElement(By.XPath("//button[@type='button' and @class='flex justify-center items-center font-bold rounded-full disabled:cursor-not-allowed disabled:text-primary disabled:bg-gray-300 disabled:border-gray-300 transition-smooth disabled:text-gray-300 bg-transparent disabled:bg-transparent rounded-full border border-accent text-accent text-accent-100 hover:border-accent-100 w-9 h-9 grid place-items-center text-sm leading-4']"));
+
+                return elements.Any(e => e.Displayed && e.Enabled) ? elements.First() : checkButton;
             });
 
             IJavaScriptExecutor js = (IJavaScriptExecutor)_driver;
