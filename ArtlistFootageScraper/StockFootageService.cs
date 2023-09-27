@@ -66,8 +66,7 @@ namespace ArtlistFootageScraper
                 throw new DirectoryNotFoundException("Parent directory not found. Cannot proceed without a valid directory.");
             }
 
-            string envFilePath = Path.Combine(parentDirectory, ".env");
-            Env.Load(envFilePath);
+            Env.Load();
 
             string EMAIL = Env.GetString("EMAIL");
             string PASSWORD = Env.GetString("PASSWORD");
