@@ -6,6 +6,7 @@ using WebDriverManager.DriverConfigs.Impl;
 using static System.Globalization.CultureInfo;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
+using System.IO;
 
 namespace ArtlistFootageScraper
 {
@@ -16,6 +17,7 @@ namespace ArtlistFootageScraper
         private readonly WebDriverWait _wait;
         private readonly ILogger<IStockFootageService> _logger;
         private readonly IFileService _fileService;
+        private string currentHref = "";
 
         public StockFootageService(IWebDriver driver, WebDriverWait wait, ILogger<IStockFootageService> logger, IFileService fileService)
         {
@@ -31,8 +33,16 @@ namespace ArtlistFootageScraper
             {
                 Login();
                 SearchFootage(keywords);
-                DownloadFootage(downloadDirectory);
-                return _fileService?.GetLatestDownloadedFile(downloadDirectory);
+
+                string? filePath = DownloadFootage(downloadDirectory);
+
+                if (filePath == null)
+                {
+                    filePath = _fileService?.GetLatestDownloadedFile(downloadDirectory);
+                    if (!string.IsNullOrEmpty(currentHref)) SaveFootageLinkToStorage(currentHref, filePath);
+                }
+
+                return filePath;
             }
             catch (Exception ex)
             {
@@ -125,7 +135,43 @@ namespace ArtlistFootageScraper
             _wait.Until(d => d.FindElements(By.XPath("//div[@data-id='finder-content']")).Count > 0);
         }
 
-        private void DownloadFootage(string downloadDirectory)
+        private string? CheckIfFootageIsDownloaded(string? href)
+        {
+            var storageManager = new LinkStorage();
+            var storage = storageManager.LoadStorage();
+
+            // Check if the href is already in the storage
+            if (storage != null && href != null && storage.Links.ContainsKey(href))
+            {
+                string filePath = storage.Links[href];
+
+                if (File.Exists(filePath))
+                {
+                    return filePath;
+                }
+                else
+                {
+                    storage.Links.Remove(href);
+                    storageManager.SaveStorage(storage);
+                }
+            }
+
+            return null;
+        }
+
+        private void SaveFootageLinkToStorage(string? href, string? path)
+        {
+            var storageManager = new LinkStorage();
+            var storage = storageManager.LoadStorage();
+
+            if (href != null && path != null && storage != null)
+            {
+                storage.Links[href] = path;
+                storageManager.SaveStorage(storage);
+            }
+        }
+
+        private string? DownloadFootage(string downloadDirectory)
         {
             // Navigate to the first footage result
             var footageView = _driver.FindElement(By.XPath("//div[@data-id='finder-content']"));
@@ -137,6 +183,15 @@ namespace ArtlistFootageScraper
 
             string? href = videoItemContainer?.FindElement(By.XPath(".//a")).GetAttribute("href");
             _driver.Navigate().GoToUrl(href);
+
+            currentHref = href != null ? href : currentHref;
+
+            string? filePath = CheckIfFootageIsDownloaded(href);
+
+            if (filePath != null)
+            {
+                return filePath;
+            }
 
             // Initiate download
             IWebElement? downloadButton = null;
@@ -166,6 +221,7 @@ namespace ArtlistFootageScraper
 
             WaitForDownloadCompletion(downloadDirectory);
             _logger.LogInformation("Download Completed");
+            return null;
         }
 
         public static void WaitForDownloadStart(string directory)
