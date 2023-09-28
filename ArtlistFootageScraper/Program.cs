@@ -1,15 +1,44 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using ArtlistFootageScraper.Services;
+using DotNetEnv;
+using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System.Diagnostics;
 using WebDriverManager.DriverConfigs.Impl;
+using static System.Globalization.CultureInfo;
 
 namespace ArtlistFootageScraper
 {
     public static class Program
     {
-        static void Main(string[] args)
+        private static async Task Main(string[] args)
+        {
+            Console.WriteLine("Prompt:");
+            string? title = Console.ReadLine();
+            if (title == null) return;
+
+            await GetRawSpeechFile(title);
+            string[] temp = title.Split(' ');
+            GetRawStockFootage(temp);
+        }
+
+        static async Task GetRawSpeechFile(string message)
+        {
+            // Setup logger
+            using var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+            });
+            var logger = loggerFactory.CreateLogger<ITextToSpeechService>();
+
+            //Getting File
+            TextToSpeechService ttsService = new TextToSpeechService(logger);
+            string? filePath = await ttsService.GetRawTTSFileAsync(message);
+            if (filePath != null) OpenMediaFile(filePath);
+        }
+
+        static void GetRawStockFootage(string[] keywords)
         {
             var downloadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
 
@@ -18,28 +47,14 @@ namespace ArtlistFootageScraper
                 Directory.CreateDirectory(downloadDirectory);
             }
 
-            Console.WriteLine("Prompt:");
-            string? inputPrompt = Console.ReadLine();
-
-            if (inputPrompt == null)
-            {
-                return;
-            }
-
-            var pieces = inputPrompt.Contains(',') ? inputPrompt?.Split(new[] { ',' }, 2) : new string[] { inputPrompt };
-
-            if (pieces == null)
-            {
-                return;
-            }
-
-            // Setup logger - For simplicity, we'll use the Console Logger
+            // Setup logger
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
                 builder.AddConsole();
             });
             var logger = loggerFactory.CreateLogger<StockFootageService>();
 
+            //Chrome Options
             var options = SetupChromeOptions(downloadDirectory);
 
             // Setup WebDriver
@@ -55,8 +70,8 @@ namespace ArtlistFootageScraper
             // Initialize the service with its dependencies
             StockFootageService stockFootageService = new StockFootageService(webDriver, webDriverWait, logger, fileService);
 
-            string? file = stockFootageService.GenerateStockFootageFromKeywordsSynchronously(pieces, downloadDirectory);
-            OpenVideoFile(file);
+            string? file = stockFootageService.GenerateStockFootageFromKeywordsSynchronously(keywords, downloadDirectory);
+            OpenMediaFile(file);
         }
 
         static ChromeOptions SetupChromeOptions(string downloadDirectory)
@@ -74,7 +89,7 @@ namespace ArtlistFootageScraper
             return options;
         }
 
-        static void OpenVideoFile(string? filePath)
+        static void OpenMediaFile(string? filePath)
         {
             if (filePath == null)
             {
