@@ -1,4 +1,4 @@
-﻿namespace ArtlistFootageScraper
+﻿namespace ArtlistFootageScraper.Services
 {
     public interface IFileService
     {

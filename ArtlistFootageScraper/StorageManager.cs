@@ -3,11 +3,11 @@ using System.IO;
 
 namespace ArtlistFootageScraper
 {
-    public class LinkStorage
+    public static class StorageManager
     {
-        private const string StorageFilePath = "linkStorage.json";
+        private const string StorageFilePath = "storage.json";
 
-        public Storage LoadStorage()
+        public static Storage? LoadStorage()
         {
             if (File.Exists(StorageFilePath))
             {
@@ -17,7 +17,7 @@ namespace ArtlistFootageScraper
             return new Storage();
         }
 
-        public void SaveStorage(Storage storage)
+        public static void SaveStorage(Storage storage)
         {
             string json = JsonConvert.SerializeObject(storage);
             File.WriteAllText(StorageFilePath, json);

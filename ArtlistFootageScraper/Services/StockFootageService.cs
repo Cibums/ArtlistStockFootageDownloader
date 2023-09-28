@@ -7,8 +7,9 @@ using static System.Globalization.CultureInfo;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using System.IO;
+using ArtlistFootageScraper.Exceptions;
 
-namespace ArtlistFootageScraper
+namespace ArtlistFootageScraper.Services
 {
     public class StockFootageService : IStockFootageService
     {
@@ -65,28 +66,15 @@ namespace ArtlistFootageScraper
             IWebElement? signInButton = _wait.Until(driver =>
             {
                 var elements = driver.FindElements(By.XPath("//div[contains(text(), 'Sign in')]"));
-                return (elements.Count > 0 && elements[0].Displayed && elements[0].Enabled) ? elements[0] : null;
+                return elements.Count > 0 && elements[0].Displayed && elements[0].Enabled ? elements[0] : null;
             });
             signInButton?.Click();
 
-            // Load environment variables for login details
-            string? parentDirectory = Directory.GetParent(Directory.GetCurrentDirectory())?.Parent?.Parent?.FullName;
-            if (parentDirectory == null)
-            {
-                throw new DirectoryNotFoundException("Parent directory not found. Cannot proceed without a valid directory.");
-            }
-
-            string envFilePath = Path.Combine(parentDirectory, ".env");
-            Env.Load(envFilePath);
-
-            string EMAIL = Env.GetString("EMAIL");
-            string PASSWORD = Env.GetString("PASSWORD");
-            string FIRST_NAME = Env.GetString("FIRST_NAME");
-            string firstname = CurrentCulture.TextInfo.ToTitleCase(FIRST_NAME.ToLower().Trim());
+            string firstname = CurrentCulture.TextInfo.ToTitleCase(AppConfiguration.FIRST_NAME.ToLower().Trim());
 
             // Input email and password
-            IWebElement emailInput = _wait.Until<IWebElement>(d => d.FindElement(By.CssSelector("input[data-testid='email']")));
-            emailInput.SendKeys(EMAIL);
+            IWebElement emailInput = _wait.Until(d => d.FindElement(By.CssSelector("input[data-testid='email']")));
+            emailInput.SendKeys(AppConfiguration.EMAIL);
 
             IWebElement? passwordInput = _wait.Until(d =>
             {
@@ -94,7 +82,7 @@ namespace ArtlistFootageScraper
                 return element.Displayed && element.Enabled ? element : null;
             });
             passwordInput?.Click();
-            passwordInput?.SendKeys(PASSWORD);
+            passwordInput?.SendKeys(AppConfiguration.PASSWORD);
 
             // Click login button
             var loginButton = _wait.Until(driver => driver.FindElement(By.XPath("//button[contains(., 'Sign in')]")));
@@ -116,7 +104,7 @@ namespace ArtlistFootageScraper
                 }
                 catch (NoSuchElementException)
                 {
-                    System.Threading.Thread.Sleep(500);  // Wait briefly before checking again
+                    Thread.Sleep(500);  // Wait briefly before checking again
                 }
             }
 
@@ -137,13 +125,12 @@ namespace ArtlistFootageScraper
 
         private string? CheckIfFootageIsDownloaded(string? href)
         {
-            var storageManager = new LinkStorage();
-            var storage = storageManager.LoadStorage();
+            var storage = StorageManager.LoadStorage();
 
             // Check if the href is already in the storage
-            if (storage != null && href != null && storage.Links.ContainsKey(href))
+            if (storage != null && href != null && storage.FootageLinks.ContainsKey(href))
             {
-                string filePath = storage.Links[href];
+                string filePath = storage.FootageLinks[href];
 
                 if (File.Exists(filePath))
                 {
@@ -151,8 +138,8 @@ namespace ArtlistFootageScraper
                 }
                 else
                 {
-                    storage.Links.Remove(href);
-                    storageManager.SaveStorage(storage);
+                    storage.FootageLinks.Remove(href);
+                    StorageManager.SaveStorage(storage);
                 }
             }
 
@@ -161,13 +148,12 @@ namespace ArtlistFootageScraper
 
         private void SaveFootageLinkToStorage(string? href, string? path)
         {
-            var storageManager = new LinkStorage();
-            var storage = storageManager.LoadStorage();
+            var storage = StorageManager.LoadStorage();
 
             if (href != null && path != null && storage != null)
             {
-                storage.Links[href] = path;
-                storageManager.SaveStorage(storage);
+                storage.FootageLinks[href] = path;
+                StorageManager.SaveStorage(storage);
             }
         }
 
@@ -178,7 +164,7 @@ namespace ArtlistFootageScraper
             var videoItemContainer = _wait.Until(driver =>
             {
                 var element = footageView.FindElement(By.XPath(".//div[@data-testid='video-item-container']"));
-                return (element != null && element.Displayed) ? element : null;
+                return element != null && element.Displayed ? element : null;
             });
 
             string? href = videoItemContainer?.FindElement(By.XPath(".//a")).GetAttribute("href");
@@ -231,7 +217,7 @@ namespace ArtlistFootageScraper
             {
                 if (Directory.GetFiles(directory, "*.crdownload").Any())
                     return;
-                System.Threading.Thread.Sleep(500); // Check every half-second
+                Thread.Sleep(500); // Check every half-second
             }
             throw new TimeoutException("Download did not start within expected time.");
         }
@@ -243,7 +229,7 @@ namespace ArtlistFootageScraper
             {
                 if (!Directory.GetFiles(directory, "*.crdownload").Any())
                     return;
-                System.Threading.Thread.Sleep(1000); // Check every second
+                Thread.Sleep(1000); // Check every second
             }
             throw new TimeoutException("Download did not complete within expected time.");
         }
