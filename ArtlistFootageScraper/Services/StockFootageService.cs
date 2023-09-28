@@ -57,7 +57,7 @@ namespace ArtlistFootageScraper.Services
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Minor Code Smell", "S1075:URIs should not be hardcoded", Justification = "This will never be anything else and there's no reason for this to not be hardcoded")]
-        private void Login()
+        public void Login()
         {
             // Navigate to the login page
             _driver.Navigate().GoToUrl("https://artlist.io/");
@@ -114,7 +114,7 @@ namespace ArtlistFootageScraper.Services
             }
         }
 
-        private void SearchFootage(string[] keywords)
+        public void SearchFootage(string[] keywords)
         {
             // Navigate to the search footage page with the specified keywords
             _driver.Navigate().GoToUrl($"https://artlist.io/stock-footage/search?terms={string.Join(", ", keywords)}");

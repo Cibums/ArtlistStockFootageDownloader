@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33122.133
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArtlistFootageScraper", "ArtlistFootageScraper\ArtlistFootageScraper.csproj", "{D8672A3C-8CB1-40C4-9F42-CB6622970B43}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ArtlistFootageScraper", "ArtlistFootageScraper\ArtlistFootageScraper.csproj", "{D8672A3C-8CB1-40C4-9F42-CB6622970B43}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{03A97BB0-C8C0-4B97-9521-E90A051BCC61}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArtlistFootageScraperTests", "ArtlistFootageScraperTests\ArtlistFootageScraperTests.csproj", "{FFAEF8A2-9B7E-4AD3-AB4B-31A3581CA020}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,6 +19,10 @@ Global
 		{D8672A3C-8CB1-40C4-9F42-CB6622970B43}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D8672A3C-8CB1-40C4-9F42-CB6622970B43}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D8672A3C-8CB1-40C4-9F42-CB6622970B43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFAEF8A2-9B7E-4AD3-AB4B-31A3581CA020}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFAEF8A2-9B7E-4AD3-AB4B-31A3581CA020}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFAEF8A2-9B7E-4AD3-AB4B-31A3581CA020}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFAEF8A2-9B7E-4AD3-AB4B-31A3581CA020}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
