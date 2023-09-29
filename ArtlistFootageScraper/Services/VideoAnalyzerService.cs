@@ -229,7 +229,10 @@ namespace ArtlistFootageScraper.Services
             if (startIndex < 0 || startIndex >= points.Count || endIndex < 0 || endIndex > points.Count || startIndex > endIndex)
                 throw new ArgumentOutOfRangeException("Invalid start or end index.");
 
-            return points.GetRange(startIndex, endIndex - startIndex);
+            int tempEndIndex = endIndex;
+            int tempCount = points.Count;
+            var endFrame = tempEndIndex;
+            return points.GetRange(startIndex, endFrame - startIndex);
         }
 
         private Point CalculateAveragePoint(List<Point> points)

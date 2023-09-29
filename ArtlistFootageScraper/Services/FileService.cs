@@ -13,7 +13,7 @@ namespace ArtlistFootageScraper.Services
             // Find the latest downloaded file
             var latestFile = Directory.GetFiles(downloadDirectory)
                 .Select(f => new FileInfo(f))
-                .OrderByDescending(f => f.CreationTime)
+                .OrderByDescending(f => f.LastWriteTime)
                 .FirstOrDefault();
 
             if (latestFile != null)
