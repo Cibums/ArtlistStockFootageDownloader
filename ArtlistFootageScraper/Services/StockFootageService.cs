@@ -212,10 +212,13 @@ namespace ArtlistFootageScraper.Services
 
         public static void WaitForDownloadStart(string directory)
         {
+            var initialFiles = new HashSet<string>(Directory.GetFiles(directory));
             var end = DateTime.Now.AddMinutes(1);  // 1 minute timeout
             while (DateTime.Now < end)
             {
-                if (Directory.GetFiles(directory, "*.crdownload").Any())
+                var currentFiles = new HashSet<string>(Directory.GetFiles(directory));
+                if (currentFiles.Count > initialFiles.Count ||
+                    currentFiles.Except(initialFiles).Any(f => f.EndsWith(".crdownload")))
                     return;
                 Thread.Sleep(500); // Check every half-second
             }
