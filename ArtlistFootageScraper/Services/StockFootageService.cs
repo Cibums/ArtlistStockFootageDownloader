@@ -39,7 +39,7 @@ namespace ArtlistFootageScraper.Services
 
                 if (filePath == null)
                 {
-                    filePath = _fileService?.GetLatestDownloadedFile(downloadDirectory);
+                    filePath = _fileService?.GetLatestChangedFile(downloadDirectory);
                     if (!string.IsNullOrEmpty(currentHref)) SaveFootageLinkToStorage(currentHref, filePath);
                 }
 

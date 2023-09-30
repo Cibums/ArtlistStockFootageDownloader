@@ -21,7 +21,7 @@ namespace ArtlistFootageScraper.Services
             if (File.Exists(filePath)) File.Delete(filePath);
         }
 
-        public string? GetLatestDownloadedFile(string downloadDirectory)
+        public string? GetLatestChangedFile(string downloadDirectory)
         {
             // Find the latest downloaded file
             var latestFile = Directory.GetFiles(downloadDirectory)
