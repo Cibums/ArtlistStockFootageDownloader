@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,36 @@ namespace ArtlistFootageScraper.Services
         {
             if (filePath == null) throw new ArgumentNullException("File path invalid");
             if (File.Exists(filePath)) File.Delete(filePath);
+        }
+
+        public void DeleteVideoTempFiles(string directoryPath)
+        {
+            // Check if the directory exists
+            if (!Directory.Exists(directoryPath))
+            {
+                Console.WriteLine($"Directory {directoryPath} does not exist.");
+                return;
+            }
+
+            // Get all files in the directory
+            string[] files = Directory.GetFiles(directoryPath);
+
+            foreach (string file in files)
+            {
+                // Check if the filename contains the specified substring
+                if (Path.GetFileName(file).Contains("merged") || Path.GetFileName(file).Contains("convertedFps"))
+                {
+                    try
+                    {
+                        File.Delete(file);
+                        Console.WriteLine($"Deleted: {file}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error deleting {file}. Reason: {ex.Message}");
+                    }
+                }
+            }
         }
 
         public string? GetLatestChangedFile(string downloadDirectory)

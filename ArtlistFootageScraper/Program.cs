@@ -1,4 +1,5 @@
-﻿using ArtlistFootageScraper.Services;
+﻿using AngleSharp.Html.Dom;
+using ArtlistFootageScraper.Services;
 using DotNetEnv;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -16,6 +17,7 @@ namespace ArtlistFootageScraper
 {
     public static class Program
     {
+        private static string AnimalsList = Path.GetFullPath(@"..\..\..\animals.txt");
         private const string VideoFileName = "video.mp4";
         private const string ScenesFileName = "scenes.txt";
         private static readonly string OutputDir = AppConfiguration.stockFootageOutputPath;
@@ -43,13 +45,18 @@ namespace ArtlistFootageScraper
         {
             fileService.DeleteIfExists(Path.Combine(OutputDir, VideoFileName));
             fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
+            fileService.DeleteVideoTempFiles(OutputDir);
         }
 
         private static async Task<ScriptResponse?> GetScript(IServiceProvider services)
         {
-            string scriptWord = "snake";
+            string[] animals = File.ReadAllLines(AnimalsList);
+            Random random = new Random();
+            int randomIndex = random.Next(animals.Length);
+            string scriptWord = animals[randomIndex];
+
             var scriptService = services.GetRequiredService<IScriptService>();
-            ScriptResponse? response = await scriptService.GetScript(scriptWord, 10);
+            ScriptResponse? response = await scriptService.GetScript(scriptWord, 40);
             if (response == null) throw new ArgumentNullException(nameof(response));
             response.AddGeneralKeyword(scriptWord);
             return response;
