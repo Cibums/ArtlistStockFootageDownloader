@@ -16,64 +16,65 @@ namespace ArtlistFootageScraper
 {
     public static class Program
     {
-        private static string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
+        private const string VideoFileName = "video.mp4";
+        private const string ScenesFileName = "scenes.txt";
+        private static readonly string OutputDir = AppConfiguration.stockFootageOutputPath;
 
         private static async Task Main(string[] args)
         {
             using var host = CreateHostBuilder(args).Build();
+            await ExecuteVideoCreationAsync(host.Services);
+        }
 
-            var processingService = host.Services.GetRequiredService<IVideoProcessingService>();
-            host.Services.GetRequiredService<IVideoAnalysisService>();
-            host.Services.GetRequiredService<IVideoUtilityService>();
-            var fileService = host.Services.GetRequiredService<IFileService>();
-            //host.Services.GetRequiredService<IStockFootageService>();
-            var ttsService = host.Services.GetRequiredService<ITextToSpeechService>();
+        private static async Task ExecuteVideoCreationAsync(IServiceProvider services)
+        {
+            var fileService = services.GetRequiredService<IFileService>();
+            DeleteExistingFiles(fileService);
 
-            if (File.Exists(outputDir + "\\video.mp4"))
-            {
-                File.Delete(outputDir + "\\video.mp4");
-            }
+            var script = GetScript();
+            if (script == null) return;
 
-            if (File.Exists(outputDir + "\\scenes.txt"))
-            {
-                File.Delete(outputDir + "\\scenes.txt");
-            }
+            await RenderVideo(script, services);
+        }
 
+        private static void DeleteExistingFiles(IFileService fileService)
+        {
+            fileService.DeleteIfExists(Path.Combine(OutputDir, VideoFileName));
+            fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
+        }
+
+        private static ScriptResponse? GetScript()
+        {
             var settings = new JsonSerializerSettings
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
-            ScriptResponse? script = JsonConvert.DeserializeObject<ScriptResponse>("{\r\n    \"title\": \"Bizarre Wonders of the Bat World\",\r\n    \"soundtrack_prompt\": \"Eerie, Enchanting Nature Documentary Instrumental\",\r\n    \"scenes\": [\r\n        {\r\n            \"message\": \"Enter the world of bats, where the bizarre meets the beautiful.\",\r\n            \"keywords\": [\"Bat\", \"Silhouette\", \"Night\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats are the only mammals capable of sustained flight.\",\r\n            \"keywords\": [\"Flying\", \"Bat\", \"Sky\"]\r\n        },\r\n        {\r\n            \"message\": \"Some, like the vampire bat, survive solely on blood.\",\r\n            \"keywords\": [\"Vampire\", \"Bat\", \"Blood\"]\r\n        },\r\n        {\r\n            \"message\": \"With echolocation, they see the world through sound waves.\",\r\n            \"keywords\": [\"Echolocation\", \"Sound\", \"Waves\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats play a crucial role in pollinating our favorite fruits.\",\r\n            \"keywords\": [\"Bat\", \"Flower\", \"Pollination\"]\r\n        },\r\n        {\r\n            \"message\": \"Their guano, or droppings, is a rich fertilizer for plants.\",\r\n            \"keywords\": [\"Guano\", \"Plants\", \"Fertilizer\"]\r\n        },\r\n        {\r\n            \"message\": \"From mystique to marvel, bats truly are nature's wonder.\",\r\n            \"keywords\": [\"Bat\", \"Nature\", \"Marvel\"]\r\n        }\r\n    ]\r\n}", settings);
-            if (script == null) return;
-            await RenderVideo(script, processingService, ttsService, fileService);
+            return JsonConvert.DeserializeObject<ScriptResponse>("{\r\n    \"title\": \"Bizarre Wonders of the Bat World\",\r\n    \"soundtrack_prompt\": \"Eerie, Enchanting Nature Documentary Instrumental\",\r\n    \"scenes\": [\r\n        {\r\n            \"message\": \"Enter the world of bats, where the bizarre meets the beautiful.\",\r\n            \"keywords\": [\"Bat\", \"Silhouette\", \"Night\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats are the only mammals capable of sustained flight.\",\r\n            \"keywords\": [\"Flying\", \"Bat\", \"Sky\"]\r\n        },\r\n        {\r\n            \"message\": \"Some, like the vampire bat, survive solely on blood.\",\r\n            \"keywords\": [\"Vampire\", \"Bat\", \"Blood\"]\r\n        },\r\n        {\r\n            \"message\": \"With echolocation, they see the world through sound waves.\",\r\n            \"keywords\": [\"Echolocation\", \"Sound\", \"Waves\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats play a crucial role in pollinating our favorite fruits.\",\r\n            \"keywords\": [\"Bat\", \"Flower\", \"Pollination\"]\r\n        },\r\n        {\r\n            \"message\": \"Their guano, or droppings, is a rich fertilizer for plants.\",\r\n            \"keywords\": [\"Guano\", \"Plants\", \"Fertilizer\"]\r\n        },\r\n        {\r\n            \"message\": \"From mystique to marvel, bats truly are nature's wonder.\",\r\n            \"keywords\": [\"Bat\", \"Nature\", \"Marvel\"]\r\n        }\r\n    ]\r\n}", settings);
         }
 
-        static async Task RenderVideo(ScriptResponse? script, IVideoProcessingService processingService, ITextToSpeechService ttsService, IFileService fileService)
+        private static async Task RenderVideo(ScriptResponse script, IServiceProvider services)
         {
-            if (script == null || script.Scenes == null)
-            {
-                return;
-            }
+            var processingService = services.GetRequiredService<IVideoProcessingService>();
+            var ttsService = services.GetRequiredService<ITextToSpeechService>();
+            var fileService = services.GetRequiredService<IFileService>();
 
-            foreach (ScriptScene scene in script.Scenes)
+            foreach (var scene in script.Scenes)
             {
                 if (scene.Message == null || scene.Keywords == null) continue;
 
-                string? ttsFilePath = await ttsService.GetRawTTSFileAsync(scene.Message);
+                var ttsFilePath = await ttsService.GetRawTTSFileAsync(scene.Message);
+                var footageFilePath = GetRawStockFootage(scene.Keywords, fileService);
 
-                string? footageFilePath = GetRawStockFootage(scene.Keywords, fileService);
                 if (footageFilePath != null && ttsFilePath != null)
                 {
-                    string? scenePath = RenderScene(footageFilePath, ttsFilePath, processingService);
-                    File.AppendAllText(outputDir + "\\scenes.txt", "file '" + scenePath + "'" + Environment.NewLine);
+                    var scenePath = RenderScene(footageFilePath, ttsFilePath, processingService);
+                    fileService.AppendAllText(Path.Combine(OutputDir, ScenesFileName), $"file '{scenePath}'{Environment.NewLine}");
                 }
             }
 
-            processingService.ConcatenateVideos(outputDir + "\\scenes.txt", outputDir + "\\video.mp4");
-            File.Delete(outputDir + "\\scenes.txt");
-            OpenMediaFile(outputDir + "\\video.mp4");
-
-            //Add Music
+            processingService.ConcatenateVideos(Path.Combine(OutputDir, ScenesFileName), Path.Combine(OutputDir, VideoFileName));
+            fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
+            OpenMediaFile(Path.Combine(OutputDir, VideoFileName));
         }
 
         static string? RenderScene(string footagePath, string speechPath, IVideoProcessingService processingService)
@@ -154,9 +155,8 @@ namespace ArtlistFootageScraper
                 services.AddSingleton<IVideoAnalysisService, VideoAnalysisService>();
                 services.AddSingleton<IVideoUtilityService, VideoUtilityService>();
                 services.AddSingleton<IVideoProcessingService, VideoProcessingService>();
-                services.AddSingleton<IFileService, FileService>();
-                services.AddSingleton<IStockFootageService, StockFootageService>();
                 services.AddSingleton<ITextToSpeechService, TextToSpeechService>();
+                services.AddSingleton<IFileService, FileService>();
             });
     }
 }
