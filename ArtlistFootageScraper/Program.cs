@@ -18,17 +18,16 @@ namespace ArtlistFootageScraper
     {
         private static string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
 
-        private static IVideoProcessingService processingService;
-        private static IVideoAnalysisService analysisService;
-        private static IVideoUtilityService utilityService;
-
         private static async Task Main(string[] args)
         {
             using var host = CreateHostBuilder(args).Build();
 
-            processingService = host.Services.GetRequiredService<IVideoProcessingService>();
-            analysisService = host.Services.GetRequiredService<IVideoAnalysisService>();
-            utilityService = host.Services.GetRequiredService<IVideoUtilityService>();
+            var processingService = host.Services.GetRequiredService<IVideoProcessingService>();
+            host.Services.GetRequiredService<IVideoAnalysisService>();
+            host.Services.GetRequiredService<IVideoUtilityService>();
+            host.Services.GetRequiredService<IFileDetector>();
+            host.Services.GetRequiredService<IStockFootageService>();
+            host.Services.GetRequiredService<ITextToSpeechService>();
 
             if (File.Exists(outputDir + "\\video.mp4"))
             {
@@ -46,10 +45,10 @@ namespace ArtlistFootageScraper
             };
             ScriptResponse? script = JsonConvert.DeserializeObject<ScriptResponse>("{\r\n    \"title\": \"Bizarre Wonders of the Bat World\",\r\n    \"soundtrack_prompt\": \"Eerie, Enchanting Nature Documentary Instrumental\",\r\n    \"scenes\": [\r\n        {\r\n            \"message\": \"Enter the world of bats, where the bizarre meets the beautiful.\",\r\n            \"keywords\": [\"Bat\", \"Silhouette\", \"Night\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats are the only mammals capable of sustained flight.\",\r\n            \"keywords\": [\"Flying\", \"Bat\", \"Sky\"]\r\n        },\r\n        {\r\n            \"message\": \"Some, like the vampire bat, survive solely on blood.\",\r\n            \"keywords\": [\"Vampire\", \"Bat\", \"Blood\"]\r\n        },\r\n        {\r\n            \"message\": \"With echolocation, they see the world through sound waves.\",\r\n            \"keywords\": [\"Echolocation\", \"Sound\", \"Waves\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats play a crucial role in pollinating our favorite fruits.\",\r\n            \"keywords\": [\"Bat\", \"Flower\", \"Pollination\"]\r\n        },\r\n        {\r\n            \"message\": \"Their guano, or droppings, is a rich fertilizer for plants.\",\r\n            \"keywords\": [\"Guano\", \"Plants\", \"Fertilizer\"]\r\n        },\r\n        {\r\n            \"message\": \"From mystique to marvel, bats truly are nature's wonder.\",\r\n            \"keywords\": [\"Bat\", \"Nature\", \"Marvel\"]\r\n        }\r\n    ]\r\n}", settings);
             if (script == null) return;
-            await RenderVideo(script);
+            await RenderVideo(script, processingService);
         }
 
-        static async Task RenderVideo(ScriptResponse? script)
+        static async Task RenderVideo(ScriptResponse? script, IVideoProcessingService processingService)
         {
             if (script == null || script.Scenes == null)
             {
@@ -65,7 +64,7 @@ namespace ArtlistFootageScraper
                 string? footageFilePath = GetRawStockFootage(scene.Keywords);
                 if (footageFilePath != null && ttsFilePath != null)
                 {
-                    string? scenePath = RenderScene(footageFilePath, ttsFilePath);
+                    string? scenePath = RenderScene(footageFilePath, ttsFilePath, processingService);
                     File.AppendAllText(outputDir + "\\scenes.txt", "file '" + scenePath + "'" + Environment.NewLine);
                 }
             }
@@ -77,7 +76,7 @@ namespace ArtlistFootageScraper
             //Add Music
         }
 
-        static string? RenderScene(string footagePath, string speechPath)
+        static string? RenderScene(string footagePath, string speechPath, IVideoProcessingService processingService)
         {
             string? filePath = processingService.RenderFootage(footagePath, speechPath);
             return filePath;
