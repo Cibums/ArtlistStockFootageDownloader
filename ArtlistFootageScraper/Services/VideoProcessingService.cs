@@ -48,10 +48,19 @@ namespace ArtlistFootageScraper.Services
         {
             _logger.LogInformation($"Processing video from path: {inputPath}");
 
+            if (data.Fps != 25)
+            {
+                string originalName = Path.GetFileName(inputPath);
+                string newInputPath = ConvertTo25fps(inputPath, _outputPath + "\\convertedFps_" + originalName);
+                inputPath = newInputPath;
+                data.Fps = 25;
+            }
+
             using var capture = new VideoCapture(inputPath);
             var cropRect = CalculateCropRectangle(capture, data);
 
             string outputFile = $"{_outputPath}/output.mp4";
+
             WriteCroppedVideo(capture, cropRect, data, outputFile);
 
             if (string.IsNullOrEmpty(outputFile))
@@ -83,10 +92,9 @@ namespace ArtlistFootageScraper.Services
         {
             _logger.LogInformation($"Cropping Video");
 
-            double fps = capture.Get(Emgu.CV.CvEnum.CapProp.Fps);
             int fourCC = VideoWriter.Fourcc('H', '2', '6', '4');
 
-            using var writer = new VideoWriter(outputFile, fourCC, fps, cropRect.Size, true);
+            using var writer = new VideoWriter(outputFile, fourCC, data.Fps, cropRect.Size, true);
             Mat frame = new Mat();
             int frameCount = (int)capture.Get(Emgu.CV.CvEnum.CapProp.FrameCount);
             capture.Set(Emgu.CV.CvEnum.CapProp.PosFrames, data.StartFrame);
@@ -109,6 +117,12 @@ namespace ArtlistFootageScraper.Services
         {
             _logger.LogInformation($"Concatenating Videos");
             ExecuteFFmpeg($"-f concat -safe 0 -i \"{inputTextFilePath}\" -c copy \"{outputPath}\"");
+        }
+
+        string ConvertTo25fps(string inputVideoPath, string outputVideoPath)
+        {
+            ExecuteFFmpeg($"-i \"{inputVideoPath}\" -vf \"fps=25\" -c:a copy \"{outputVideoPath}\"");
+            return outputVideoPath;
         }
 
         private void ExecuteFFmpeg(string arguments)
