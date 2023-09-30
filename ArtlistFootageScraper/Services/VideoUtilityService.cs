@@ -71,7 +71,7 @@ namespace ArtlistFootageScraper.Services
                 process.ErrorDataReceived += (sender, e) =>
                 {
                     if (!string.IsNullOrEmpty(e.Data))
-                        _logger.LogError($"Error: {e.Data}");
+                        _logger.LogWarning($"Error: {e.Data}");
                 };
 
                 process.Start();

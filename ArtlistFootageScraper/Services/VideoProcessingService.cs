@@ -116,12 +116,12 @@ namespace ArtlistFootageScraper.Services
         public void ConcatenateVideos(string inputTextFilePath, string outputPath)
         {
             _logger.LogInformation($"Concatenating Videos");
-            ExecuteFFmpeg($"-f concat -safe 0 -i \"{inputTextFilePath}\" -c copy \"{outputPath}\"");
+            ExecuteFFmpeg($"-f concat -safe 0 -i \"{inputTextFilePath}\" -c copy \"{outputPath}\" -loglevel verbose");
         }
 
         string ConvertTo25fps(string inputVideoPath, string outputVideoPath)
         {
-            ExecuteFFmpeg($"-i \"{inputVideoPath}\" -vf \"fps=25\" -c:a copy \"{outputVideoPath}\"");
+            ExecuteFFmpeg($"-i \"{inputVideoPath}\" -vf \"fps=25\" -c:a copy \"{outputVideoPath}\" -loglevel verbose");
             return outputVideoPath;
         }
 
@@ -145,7 +145,11 @@ namespace ArtlistFootageScraper.Services
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
-            process.WaitForExit();
+            if (!process.WaitForExit(15000))
+            {
+                process.Kill();
+                _logger.LogWarning("FFmpeg was not completed.");
+            }
 
             _logger.LogInformation("FFmpeg process completed.");
         }

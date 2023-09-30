@@ -1,4 +1,5 @@
-﻿using ArtlistFootageScraper.Services;
+﻿using AngleSharp.Html.Dom;
+using ArtlistFootageScraper.Services;
 using DotNetEnv;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -16,6 +17,7 @@ namespace ArtlistFootageScraper
 {
     public static class Program
     {
+        private static string AnimalsList = Path.GetFullPath(@"..\..\..\animals.txt");
         private const string VideoFileName = "video.mp4";
         private const string ScenesFileName = "scenes.txt";
         private static readonly string OutputDir = AppConfiguration.stockFootageOutputPath;
@@ -24,6 +26,8 @@ namespace ArtlistFootageScraper
         {
             using var host = CreateHostBuilder(args).Build();
             await ExecuteVideoCreationAsync(host.Services);
+            OpenMediaFile(Path.Combine(OutputDir, VideoFileName));
+            Environment.Exit(0);
         }
 
         private static async Task ExecuteVideoCreationAsync(IServiceProvider services)
@@ -31,7 +35,7 @@ namespace ArtlistFootageScraper
             var fileService = services.GetRequiredService<IFileService>();
             DeleteExistingFiles(fileService);
 
-            var script = GetScript();
+            var script = await GetScript(services);
             if (script == null) return;
 
             await RenderVideo(script, services);
@@ -41,15 +45,21 @@ namespace ArtlistFootageScraper
         {
             fileService.DeleteIfExists(Path.Combine(OutputDir, VideoFileName));
             fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
+            fileService.DeleteVideoTempFiles(OutputDir);
         }
 
-        private static ScriptResponse? GetScript()
+        private static async Task<ScriptResponse?> GetScript(IServiceProvider services)
         {
-            var settings = new JsonSerializerSettings
-            {
-                ContractResolver = new CamelCasePropertyNamesContractResolver()
-            };
-            return JsonConvert.DeserializeObject<ScriptResponse>("{\r\n    \"title\": \"Bizarre Wonders of the Bat World\",\r\n    \"soundtrack_prompt\": \"Eerie, Enchanting Nature Documentary Instrumental\",\r\n    \"scenes\": [\r\n        {\r\n            \"message\": \"Enter the world of bats, where the bizarre meets the beautiful.\",\r\n            \"keywords\": [\"Bat\", \"Silhouette\", \"Night\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats are the only mammals capable of sustained flight.\",\r\n            \"keywords\": [\"Flying\", \"Bat\", \"Sky\"]\r\n        },\r\n        {\r\n            \"message\": \"Some, like the vampire bat, survive solely on blood.\",\r\n            \"keywords\": [\"Vampire\", \"Bat\", \"Blood\"]\r\n        },\r\n        {\r\n            \"message\": \"With echolocation, they see the world through sound waves.\",\r\n            \"keywords\": [\"Echolocation\", \"Sound\", \"Waves\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats play a crucial role in pollinating our favorite fruits.\",\r\n            \"keywords\": [\"Bat\", \"Flower\", \"Pollination\"]\r\n        },\r\n        {\r\n            \"message\": \"Their guano, or droppings, is a rich fertilizer for plants.\",\r\n            \"keywords\": [\"Guano\", \"Plants\", \"Fertilizer\"]\r\n        },\r\n        {\r\n            \"message\": \"From mystique to marvel, bats truly are nature's wonder.\",\r\n            \"keywords\": [\"Bat\", \"Nature\", \"Marvel\"]\r\n        }\r\n    ]\r\n}", settings);
+            string[] animals = File.ReadAllLines(AnimalsList);
+            Random random = new Random();
+            int randomIndex = random.Next(animals.Length);
+            string scriptWord = animals[randomIndex];
+
+            var scriptService = services.GetRequiredService<IScriptService>();
+            ScriptResponse? response = await scriptService.GetScript(scriptWord, 40);
+            if (response == null) throw new ArgumentNullException(nameof(response));
+            response.AddGeneralKeyword(scriptWord);
+            return response;
         }
 
         private static async Task RenderVideo(ScriptResponse script, IServiceProvider services)
@@ -63,7 +73,7 @@ namespace ArtlistFootageScraper
                 if (scene.Message == null || scene.Keywords == null) continue;
 
                 var ttsFilePath = await ttsService.GetRawTTSFileAsync(scene.Message);
-                var footageFilePath = GetRawStockFootage(scene.Keywords, fileService);
+                var footageFilePath = GetRawStockFootage(scene.Keywords.ToArray(), fileService);
 
                 if (footageFilePath != null && ttsFilePath != null)
                 {
@@ -74,7 +84,6 @@ namespace ArtlistFootageScraper
 
             processingService.ConcatenateVideos(Path.Combine(OutputDir, ScenesFileName), Path.Combine(OutputDir, VideoFileName));
             fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
-            OpenMediaFile(Path.Combine(OutputDir, VideoFileName));
         }
 
         static string? RenderScene(string footagePath, string speechPath, IVideoProcessingService processingService)
@@ -157,6 +166,8 @@ namespace ArtlistFootageScraper
                 services.AddSingleton<IVideoProcessingService, VideoProcessingService>();
                 services.AddSingleton<ITextToSpeechService, TextToSpeechService>();
                 services.AddSingleton<IFileService, FileService>();
+                services.AddSingleton<IChatGPTService, ChatGptService>();
+                services.AddSingleton<IScriptService, ScriptService>();
             });
     }
 }
