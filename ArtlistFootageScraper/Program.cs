@@ -58,7 +58,7 @@ namespace ArtlistFootageScraper
                 }
             }
 
-            VideoAnalyzerService service = new VideoAnalyzerService();
+            VideoProcessingService service = new VideoProcessingService();
             service.ConcatenateVideos(outputDir + "\\scenes.txt", outputDir + "\\video.mp4");
             File.Delete(outputDir + "\\scenes.txt");
             OpenMediaFile(outputDir + "\\video.mp4");
@@ -68,7 +68,7 @@ namespace ArtlistFootageScraper
 
         static string? RenderScene(string footagePath, string speechPath)
         {
-            VideoAnalyzerService service = new VideoAnalyzerService();
+            VideoProcessingService service = new VideoProcessingService();
             string? filePath = service.RenderFootage(footagePath, speechPath);
             return filePath;
         }
