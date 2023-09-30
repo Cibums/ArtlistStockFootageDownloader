@@ -26,8 +26,9 @@ namespace ArtlistFootageScraper.Services
             var framerate = capture.Get(CapProp.Fps);
             VideoAnalysisResult videoAnalysisResult = AnalyzeVideo(path, capture);
             int startFrame = IndexOfMaxSumSubsequence(videoAnalysisResult.ActionPerFrame, (int)Math.Round((float)framerate * lengthSeconds));
-            List<Point> points = ExtractPointsBetweenIndexes(videoAnalysisResult.MaxActionCoordinatesPerFrame, startFrame, startFrame + (int)Math.Round((float)framerate * lengthSeconds));
-            Point focusPoint = CalculateAveragePoint(points);
+            int endFrame = startFrame + (int)Math.Round((float)framerate * lengthSeconds);
+            List<Point> points = ExtractPointsBetweenIndexes(videoAnalysisResult.MaxActionCoordinatesPerFrame, startFrame, endFrame);
+            Point focusPoint = points != null ? CalculateAveragePoint(points) : new Point(80, 60);
             return new OptimizedFootageData(framerate, lengthSeconds, startFrame, focusPoint);
         }
 
@@ -111,6 +112,7 @@ namespace ArtlistFootageScraper.Services
             process.Start();
 
             process.BeginOutputReadLine();  // Start reading output asynchronously
+            process.BeginErrorReadLine();
             process.WaitForExit();
 
             Console.WriteLine("FFmpeg process completed.");
@@ -224,15 +226,26 @@ namespace ArtlistFootageScraper.Services
         private List<Point> ExtractPointsBetweenIndexes(List<Point> points, int startIndex, int endIndex)
         {
             if (points == null)
+            {
                 throw new ArgumentNullException(nameof(points));
+            }
 
-            if (startIndex < 0 || startIndex >= points.Count || endIndex < 0 || endIndex > points.Count || startIndex > endIndex)
+
+            if (startIndex < 0 || startIndex >= points.Count || endIndex < 0 || startIndex > endIndex)
+            {
                 throw new ArgumentOutOfRangeException("Invalid start or end index.");
+            }
 
-            int tempEndIndex = endIndex;
-            int tempCount = points.Count;
-            var endFrame = tempEndIndex;
-            return points.GetRange(startIndex, endFrame - startIndex);
+            //int endFrame = Math.Min(endIndex, points.Count);
+            try
+            {
+                List<Point> list = points.GetRange(startIndex, endIndex - startIndex);
+                return list;
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private Point CalculateAveragePoint(List<Point> points)

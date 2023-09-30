@@ -14,13 +14,25 @@ namespace ArtlistFootageScraper
 {
     public static class Program
     {
+        private static string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
+
         private static async Task Main(string[] args)
         {
+            if (File.Exists(outputDir + "\\video.mp4"))
+            {
+                File.Delete(outputDir + "\\video.mp4");
+            }
+
+            if (File.Exists(outputDir + "\\scenes.txt"))
+            {
+                File.Delete(outputDir + "\\scenes.txt");
+            }
+
             var settings = new JsonSerializerSettings
             {
                 ContractResolver = new CamelCasePropertyNamesContractResolver()
             };
-            ScriptResponse? script = JsonConvert.DeserializeObject<ScriptResponse>("{\r\n    \"title\": \"Amazing Facts About Geckos\",\r\n    \"soundtrack_prompt\": \"Lively and Curious Instrumental Background\",\r\n    \"scenes\": [\r\n        {\r\n            \"message\": \"Amazing Facts About Geckos\",\r\n            \"keywords\": [\"Geckos\", \"Lizards\", \"Tropical\"]\r\n        },\r\n        {\r\n            \"message\": \"Geckos have unique toe pads that allow them to climb even smooth surfaces.\",\r\n            \"keywords\": [\"Gecko feet\", \"Climbing\", \"Glass wall\"]\r\n        },\r\n        {\r\n            \"message\": \"Some geckos can drop their tail as a defense mechanism, and it'll grow back!\",\r\n            \"keywords\": [\"Gecko tail\", \"Defense mechanism\"]\r\n        },\r\n        {\r\n            \"message\": \"There are over 1,500 species of geckos worldwide.\",\r\n            \"keywords\": [\"Gecko species\", \"Diversity\", \"World map\"]\r\n        },\r\n        {\r\n            \"message\": \"Geckos' eyes are 350 times more sensitive to light than a human's.\",\r\n            \"keywords\": [\"Gecko eyes\", \"Night vision\", \"Moonlight\"]\r\n        },\r\n        {\r\n            \"message\": \"They communicate through chirping sounds and body language.\",\r\n            \"keywords\": [\"Gecko chirping\", \"Communication\", \"Lizard talk\"]\r\n        },\r\n        {\r\n            \"message\": \"Unlike other lizards, most geckos don't have eyelids and use their tongue to clean their eyes.\",\r\n            \"keywords\": [\"Gecko tongue\", \"Eye cleaning\", \"Close-up\"]\r\n        },\r\n        {\r\n            \"message\": \"Discover the incredible world of geckos!\",\r\n            \"keywords\": [\"Geckos\", \"Tropical forest\", \"Nature\"]\r\n        }\r\n    ]\r\n}", settings);
+            ScriptResponse? script = JsonConvert.DeserializeObject<ScriptResponse>("{\r\n    \"title\": \"Bizarre Wonders of the Bat World\",\r\n    \"soundtrack_prompt\": \"Eerie, Enchanting Nature Documentary Instrumental\",\r\n    \"scenes\": [\r\n        {\r\n            \"message\": \"Enter the world of bats, where the bizarre meets the beautiful.\",\r\n            \"keywords\": [\"Bat\", \"Silhouette\", \"Night\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats are the only mammals capable of sustained flight.\",\r\n            \"keywords\": [\"Flying\", \"Bat\", \"Sky\"]\r\n        },\r\n        {\r\n            \"message\": \"Some, like the vampire bat, survive solely on blood.\",\r\n            \"keywords\": [\"Vampire\", \"Bat\", \"Blood\"]\r\n        },\r\n        {\r\n            \"message\": \"With echolocation, they see the world through sound waves.\",\r\n            \"keywords\": [\"Echolocation\", \"Sound\", \"Waves\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats play a crucial role in pollinating our favorite fruits.\",\r\n            \"keywords\": [\"Bat\", \"Flower\", \"Pollination\"]\r\n        },\r\n        {\r\n            \"message\": \"Their guano, or droppings, is a rich fertilizer for plants.\",\r\n            \"keywords\": [\"Guano\", \"Plants\", \"Fertilizer\"]\r\n        },\r\n        {\r\n            \"message\": \"From mystique to marvel, bats truly are nature's wonder.\",\r\n            \"keywords\": [\"Bat\", \"Nature\", \"Marvel\"]\r\n        }\r\n    ]\r\n}", settings);
             if (script == null) return;
             await RenderVideo(script);
         }
@@ -31,8 +43,6 @@ namespace ArtlistFootageScraper
             {
                 return;
             }
-
-            var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
 
             foreach (ScriptScene scene in script.Scenes)
             {
