@@ -15,9 +15,9 @@ namespace ArtlistFootageScraper.Services
         private static readonly string outputPath = AppConfiguration.stockFootageOutputPath;
         private readonly IVideoAnalysisService _analysisService;
 
-        public VideoUtilityService()
+        public VideoUtilityService(IVideoAnalysisService analysisService)
         {
-            _analysisService = new VideoAnalysisService();
+            _analysisService = analysisService;
         }
 
         public OptimizedFootageData GetOptimizedFootageData(string path, float lengthSeconds)

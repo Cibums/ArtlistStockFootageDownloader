@@ -14,9 +14,9 @@ namespace ArtlistFootageScraper.Services
         private static readonly string outputPath = AppConfiguration.stockFootageOutputPath;
         private readonly IVideoUtilityService _utilityService;
 
-        public VideoProcessingService()
+        public VideoProcessingService(IVideoUtilityService utilityService)
         {
-            _utilityService = new VideoUtilityService();
+            _utilityService = utilityService;
         }
 
         public string? RenderFootage(string footagePath, string speechPath)

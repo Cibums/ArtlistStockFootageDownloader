@@ -11,6 +11,8 @@
 		<PackageReference Include="DotNetEnv" Version="2.5.0" />
 		<PackageReference Include="Emgu.CV" Version="4.8.0.5324" />
 		<PackageReference Include="Emgu.CV.runtime.windows" Version="4.8.0.5324" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />

@@ -1,5 +1,7 @@
 ﻿using ArtlistFootageScraper.Services;
 using DotNetEnv;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -16,8 +18,18 @@ namespace ArtlistFootageScraper
     {
         private static string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
 
+        private static IVideoProcessingService processingService;
+        private static IVideoAnalysisService analysisService;
+        private static IVideoUtilityService utilityService;
+
         private static async Task Main(string[] args)
         {
+            using var host = CreateHostBuilder(args).Build();
+
+            processingService = host.Services.GetRequiredService<IVideoProcessingService>();
+            analysisService = host.Services.GetRequiredService<IVideoAnalysisService>();
+            utilityService = host.Services.GetRequiredService<IVideoUtilityService>();
+
             if (File.Exists(outputDir + "\\video.mp4"))
             {
                 File.Delete(outputDir + "\\video.mp4");
@@ -58,8 +70,7 @@ namespace ArtlistFootageScraper
                 }
             }
 
-            VideoProcessingService service = new VideoProcessingService();
-            service.ConcatenateVideos(outputDir + "\\scenes.txt", outputDir + "\\video.mp4");
+            processingService.ConcatenateVideos(outputDir + "\\scenes.txt", outputDir + "\\video.mp4");
             File.Delete(outputDir + "\\scenes.txt");
             OpenMediaFile(outputDir + "\\video.mp4");
 
@@ -68,8 +79,7 @@ namespace ArtlistFootageScraper
 
         static string? RenderScene(string footagePath, string speechPath)
         {
-            VideoProcessingService service = new VideoProcessingService();
-            string? filePath = service.RenderFootage(footagePath, speechPath);
+            string? filePath = processingService.RenderFootage(footagePath, speechPath);
             return filePath;
         }
 
@@ -153,5 +163,15 @@ namespace ArtlistFootageScraper
                 Console.WriteLine($"Error opening the file: {ex.Message}");
             }
         }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+        Host.CreateDefaultBuilder(args)
+            .ConfigureServices((hostContext, services) =>
+            {
+                // Register services
+                services.AddSingleton<IVideoAnalysisService, VideoAnalysisService>();
+                services.AddSingleton<IVideoUtilityService, VideoUtilityService>();
+                services.AddSingleton<IVideoProcessingService, VideoProcessingService>();
+            });
     }
 }
