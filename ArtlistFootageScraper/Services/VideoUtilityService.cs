@@ -153,41 +153,46 @@ namespace ArtlistFootageScraper.Services
 
         public TimeSpan GetWavDuration(string filePath)
         {
-            using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            using var reader = new BinaryReader(fs);
+            using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            using (BinaryReader reader = new BinaryReader(fs))
+            {
+                // Read RIFF header
+                string chunkID = new string(reader.ReadChars(4));
+                if (chunkID != "RIFF")
+                    throw new Exception("Invalid file format");
 
-            // Read RIFF header
-            string chunkID = new string(reader.ReadChars(4));
-            if (chunkID != "RIFF")
-                throw new Exception("Invalid file format");
+                reader.ReadUInt32(); // Chunk size
+                string format = new string(reader.ReadChars(4));
+                if (format != "WAVE")
+                    throw new Exception("Invalid file format");
 
-            reader.ReadUInt32(); // Chunk size
-            string format = new string(reader.ReadChars(4));
-            if (format != "WAVE")
-                throw new Exception("Invalid file format");
+                // Read fmt subchunk
+                string subchunk1ID = new string(reader.ReadChars(4));
+                if (subchunk1ID != "fmt ")
+                    throw new Exception("Invalid file format");
 
-            // Read fmt subchunk
-            string subchunk1ID = new string(reader.ReadChars(4));
-            if (subchunk1ID != "fmt ")
-                throw new Exception("Invalid file format");
+                int subchunk1Size = reader.ReadInt32();
+                short audioFormat = reader.ReadInt16();
+                short numChannels = reader.ReadInt16();
+                int sampleRate = reader.ReadInt32();
+                int byteRate = reader.ReadInt32();
+                short blockAlign = reader.ReadInt16();
+                short bitsPerSample = reader.ReadInt16();
 
-            int subchunk1Size = reader.ReadInt32();
-            int sampleRate = reader.ReadInt32();
-            short bitsPerSample = reader.ReadInt16();
+                // Skip to data subchunk
+                reader.BaseStream.Seek(subchunk1Size - 16, SeekOrigin.Current);
+                string subchunk2ID = new string(reader.ReadChars(4));
+                if (subchunk2ID != "data")
+                    throw new Exception("Invalid file format");
 
-            // Skip to data subchunk
-            reader.BaseStream.Seek(subchunk1Size - 16, SeekOrigin.Current);
-            string subchunk2ID = new string(reader.ReadChars(4));
-            if (subchunk2ID != "data")
-                throw new Exception("Invalid file format");
+                int subchunk2Size = reader.ReadInt32();
 
-            int subchunk2Size = reader.ReadInt32();
+                // Calculate duration
+                double totalSamples = subchunk2Size / (bitsPerSample / 8.0);
+                double duration = totalSamples / sampleRate;
 
-            // Calculate duration
-            double totalSamples = subchunk2Size / (bitsPerSample / 8.0);
-            double duration = totalSamples / sampleRate;
-
-            return TimeSpan.FromSeconds(duration);
+                return TimeSpan.FromSeconds(duration);
+            }
         }
     }
 }
