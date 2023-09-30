@@ -39,7 +39,7 @@ namespace ArtlistFootageScraper.Services
 
                 if (filePath == null)
                 {
-                    filePath = _fileService?.GetLatestDownloadedFile(downloadDirectory);
+                    filePath = _fileService?.GetLatestChangedFile(downloadDirectory);
                     if (!string.IsNullOrEmpty(currentHref)) SaveFootageLinkToStorage(currentHref, filePath);
                 }
 
@@ -210,19 +210,23 @@ namespace ArtlistFootageScraper.Services
             return null;
         }
 
-        public static void WaitForDownloadStart(string directory)
+        public void WaitForDownloadStart(string directory)
         {
+            var initialFiles = new HashSet<string>(Directory.GetFiles(directory));
             var end = DateTime.Now.AddMinutes(1);  // 1 minute timeout
             while (DateTime.Now < end)
             {
-                if (Directory.GetFiles(directory, "*.crdownload").Any())
+                var currentFiles = new HashSet<string>(Directory.GetFiles(directory));
+                if (currentFiles.Count > initialFiles.Count ||
+                    currentFiles.Except(initialFiles).Any(f => f.EndsWith(".crdownload")))
                     return;
                 Thread.Sleep(500); // Check every half-second
             }
+            _logger.LogError("Download did not start within expected time.");
             throw new TimeoutException("Download did not start within expected time.");
         }
 
-        public static void WaitForDownloadCompletion(string directory)
+        public void WaitForDownloadCompletion(string directory)
         {
             var end = DateTime.Now.AddMinutes(5);  // 5 minutes timeout, adjust as needed
             while (DateTime.Now < end)
@@ -231,6 +235,7 @@ namespace ArtlistFootageScraper.Services
                     return;
                 Thread.Sleep(1000); // Check every second
             }
+            _logger.LogError("Download did not complete within expected time.");
             throw new TimeoutException("Download did not complete within expected time.");
         }
     }

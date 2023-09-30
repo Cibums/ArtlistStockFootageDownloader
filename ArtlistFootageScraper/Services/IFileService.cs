@@ -2,6 +2,8 @@
 {
     public interface IFileService
     {
-        string? GetLatestDownloadedFile(string downloadDirectory);
+        void AppendAllText(string file, string text);
+        void DeleteIfExists(string filePath);
+        string? GetLatestChangedFile(string downloadDirectory);
     }
 }
