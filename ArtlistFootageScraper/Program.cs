@@ -25,9 +25,9 @@ namespace ArtlistFootageScraper
             var processingService = host.Services.GetRequiredService<IVideoProcessingService>();
             host.Services.GetRequiredService<IVideoAnalysisService>();
             host.Services.GetRequiredService<IVideoUtilityService>();
-            host.Services.GetRequiredService<IFileDetector>();
-            host.Services.GetRequiredService<IStockFootageService>();
-            host.Services.GetRequiredService<ITextToSpeechService>();
+            var fileService = host.Services.GetRequiredService<IFileService>();
+            //host.Services.GetRequiredService<IStockFootageService>();
+            var ttsService = host.Services.GetRequiredService<ITextToSpeechService>();
 
             if (File.Exists(outputDir + "\\video.mp4"))
             {
@@ -45,10 +45,10 @@ namespace ArtlistFootageScraper
             };
             ScriptResponse? script = JsonConvert.DeserializeObject<ScriptResponse>("{\r\n    \"title\": \"Bizarre Wonders of the Bat World\",\r\n    \"soundtrack_prompt\": \"Eerie, Enchanting Nature Documentary Instrumental\",\r\n    \"scenes\": [\r\n        {\r\n            \"message\": \"Enter the world of bats, where the bizarre meets the beautiful.\",\r\n            \"keywords\": [\"Bat\", \"Silhouette\", \"Night\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats are the only mammals capable of sustained flight.\",\r\n            \"keywords\": [\"Flying\", \"Bat\", \"Sky\"]\r\n        },\r\n        {\r\n            \"message\": \"Some, like the vampire bat, survive solely on blood.\",\r\n            \"keywords\": [\"Vampire\", \"Bat\", \"Blood\"]\r\n        },\r\n        {\r\n            \"message\": \"With echolocation, they see the world through sound waves.\",\r\n            \"keywords\": [\"Echolocation\", \"Sound\", \"Waves\"]\r\n        },\r\n        {\r\n            \"message\": \"Bats play a crucial role in pollinating our favorite fruits.\",\r\n            \"keywords\": [\"Bat\", \"Flower\", \"Pollination\"]\r\n        },\r\n        {\r\n            \"message\": \"Their guano, or droppings, is a rich fertilizer for plants.\",\r\n            \"keywords\": [\"Guano\", \"Plants\", \"Fertilizer\"]\r\n        },\r\n        {\r\n            \"message\": \"From mystique to marvel, bats truly are nature's wonder.\",\r\n            \"keywords\": [\"Bat\", \"Nature\", \"Marvel\"]\r\n        }\r\n    ]\r\n}", settings);
             if (script == null) return;
-            await RenderVideo(script, processingService);
+            await RenderVideo(script, processingService, ttsService, fileService);
         }
 
-        static async Task RenderVideo(ScriptResponse? script, IVideoProcessingService processingService)
+        static async Task RenderVideo(ScriptResponse? script, IVideoProcessingService processingService, ITextToSpeechService ttsService, IFileService fileService)
         {
             if (script == null || script.Scenes == null)
             {
@@ -59,9 +59,9 @@ namespace ArtlistFootageScraper
             {
                 if (scene.Message == null || scene.Keywords == null) continue;
 
-                string? ttsFilePath = await GetRawSpeechFile(scene.Message);
+                string? ttsFilePath = await ttsService.GetRawTTSFileAsync(scene.Message);
 
-                string? footageFilePath = GetRawStockFootage(scene.Keywords);
+                string? footageFilePath = GetRawStockFootage(scene.Keywords, fileService);
                 if (footageFilePath != null && ttsFilePath != null)
                 {
                     string? scenePath = RenderScene(footageFilePath, ttsFilePath, processingService);
@@ -82,21 +82,7 @@ namespace ArtlistFootageScraper
             return filePath;
         }
 
-        static async Task<string?> GetRawSpeechFile(string message)
-        {
-            // Setup logger
-            using var loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder.AddConsole();
-            });
-            var logger = loggerFactory.CreateLogger<ITextToSpeechService>();
-
-            //Getting File
-            TextToSpeechService ttsService = new TextToSpeechService(logger);
-            return await ttsService.GetRawTTSFileAsync(message);
-        }
-
-        static string? GetRawStockFootage(string[] keywords)
+        static string? GetRawStockFootage(string[] keywords, IFileService fileService)
         {
             var downloadDirectory = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
 
@@ -118,9 +104,6 @@ namespace ArtlistFootageScraper
             // Setup WebDriver
             IWebDriver webDriver = new ChromeDriver(options);
             WebDriverWait webDriverWait = new WebDriverWait(webDriver, TimeSpan.FromSeconds(10));
-
-            // Setup File Service
-            IFileService fileService = new FileService();
 
             new WebDriverManager.DriverManager().SetUpDriver(new ChromeConfig());
             webDriver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
@@ -171,6 +154,9 @@ namespace ArtlistFootageScraper
                 services.AddSingleton<IVideoAnalysisService, VideoAnalysisService>();
                 services.AddSingleton<IVideoUtilityService, VideoUtilityService>();
                 services.AddSingleton<IVideoProcessingService, VideoProcessingService>();
+                services.AddSingleton<IFileService, FileService>();
+                services.AddSingleton<IStockFootageService, StockFootageService>();
+                services.AddSingleton<ITextToSpeechService, TextToSpeechService>();
             });
     }
 }
