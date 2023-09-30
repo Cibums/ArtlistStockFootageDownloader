@@ -10,6 +10,7 @@ namespace ArtlistFootageScraper
         public static string PASSWORD { get; private set; } = "";
         public static string RAPID_API_KEY { get; private set; } = "";
         public static string FFMPEG_EXE_PATH { get; private set; } = "";
+        public static string OPENAI_API_KEY { get; private set; } = "";
 
         static AppConfiguration()
         {
@@ -29,6 +30,7 @@ namespace ArtlistFootageScraper
             FIRST_NAME = Env.GetString("FIRST_NAME");
             RAPID_API_KEY = Env.GetString("RAPID_API_KEY");
             FFMPEG_EXE_PATH = Env.GetString("FFMPEG_EXE_PATH");
+            OPENAI_API_KEY = Env.GetString("OPENAI_API_KEY");
         }
     }
 }
