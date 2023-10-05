@@ -12,7 +12,7 @@ namespace ArtlistFootageScraper.Services
         /// <summary>
         /// Merges video and audio.
         /// </summary>
-        string MergeVideoAndAudio(string videoPath, string audioPath, string? output = null);
+        string MergeVideoAndAudio(string videoPath, string audioPath, string? output = null, float newAudioVolume = 1.0f);
 
         /// <summary>
         /// Extracts points between given indexes.

@@ -42,7 +42,7 @@ namespace ArtlistFootageScraper.Services
         /// <summary>
         /// Merges video and audio.
         /// </summary>
-        public string MergeVideoAndAudio(string videoPath, string audioPath, string? output = null)
+        public string MergeVideoAndAudio(string videoPath, string audioPath, string? output = null, float newAudioVolume = 1.0f)
         {
             var rndNumber = new Random().Next(0, 10000000);
             var outputFilePath = output ?? Path.Combine(outputPath, $"{rndNumber}merged_output.mp4");

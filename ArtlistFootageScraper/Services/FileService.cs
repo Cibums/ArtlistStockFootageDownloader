@@ -39,7 +39,10 @@ namespace ArtlistFootageScraper.Services
             string newFilePath = Path.Combine(directory, snakeCaseFileName + extension);
 
             // Rename the file by moving it to the new path
-            File.Move(filePath, newFilePath);
+            if (!File.Exists(newFilePath))
+            {
+                File.Move(filePath, newFilePath);
+            }
 
             return newFilePath;
         }

@@ -16,5 +16,7 @@
         /// <param name="inputTextFilePath">The path to the text file containing paths to the videos to concatenate.</param>
         /// <param name="outputPath">The path where the concatenated video should be saved.</param>
         void ConcatenateVideos(string inputTextFilePath, string outputPath);
+
+        public string CutAudioToBeLength(string audioFileName, float seconds);
     }
 }

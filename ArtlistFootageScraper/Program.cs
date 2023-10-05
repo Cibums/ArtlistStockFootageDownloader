@@ -1,6 +1,8 @@
 ﻿using AngleSharp.Html.Dom;
 using ArtlistFootageScraper.Services;
 using DotNetEnv;
+using Emgu.CV.CvEnum;
+using Emgu.CV;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -59,7 +61,7 @@ namespace ArtlistFootageScraper
             string scriptWord = animals[randomIndex];
 
             var scriptService = services.GetRequiredService<IScriptService>();
-            ScriptResponse? response = await scriptService.GetScript(scriptWord, 40);
+            ScriptResponse? response = await scriptService.GetScript(scriptWord, 10);
             if (response == null) throw new ArgumentNullException(nameof(response));
             response.AddGeneralKeyword(scriptWord);
             return response;
@@ -94,7 +96,15 @@ namespace ArtlistFootageScraper
 
             if (!Directory.Exists(AppConfiguration.renderingsOutputPath)) Directory.CreateDirectory(AppConfiguration.renderingsOutputPath);
 
-            string render = utilityService.MergeVideoAndAudio(Path.Combine(OutputDir, VideoFileName), musicFilePath, AppConfiguration.renderingsOutputPath + "\\" + fileService.ConvertToSnakeCase(script.Title) + ".mp4");
+            //Getting video length
+            VideoCapture videoCapture = new VideoCapture(Path.Combine(OutputDir, VideoFileName));
+            double totalFrames = videoCapture.Get(CapProp.FrameCount);
+            double fps = videoCapture.Get(CapProp.Fps);
+            double videoDurationInSeconds = totalFrames / fps;
+
+            string trimmedMusicFilePath = processingService.CutAudioToBeLength(musicFilePath, (float)videoDurationInSeconds);
+
+            string render = utilityService.MergeVideoAndAudio(Path.Combine(OutputDir, VideoFileName), trimmedMusicFilePath, AppConfiguration.renderingsOutputPath + "\\" + fileService.ConvertToSnakeCase(script.Title) + ".mp4", 0.3f);
 
             fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
 

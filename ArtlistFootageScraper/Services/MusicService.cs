@@ -110,14 +110,68 @@ namespace ArtlistFootageScraper.Services
             feelsCheckbox?.Click();
         }
 
-        private void SelectFirstTableRow()
+        private void SelectFirstTableRow(int increase = 0)
         {
             IWebElement? firstTableRow = _wait.Until(driver =>
             {
                 var elements = driver.FindElements(By.XPath("//tbody[@class='filtered-song-list-body']/tr[@class='search-result-row'][1]"));
-                return elements.Count > 0 && elements[0].Displayed && elements[0].Enabled ? elements[0] : null;
+                return elements.Count > 0 && elements[0 + increase].Displayed && elements[0 + increase].Enabled ? elements[0 + increase] : null;
             });
+
+            string timeLength = "";
+            if (firstTableRow != null)
+            {
+                var tdElements = firstTableRow.FindElements(By.TagName("td"));
+                if (tdElements.Count > 0)
+                {
+                    timeLength = tdElements[tdElements.Count - 1].Text;
+                }
+            }
+
+            if (string.IsNullOrEmpty(timeLength))
+            {
+                firstTableRow?.Click();
+                return;
+            }
+
+            int seconds = 0;
+
+            try
+            {
+                seconds = ConvertToSeconds(timeLength);
+            }
+            catch
+            {
+                firstTableRow?.Click();
+                return;
+            }
+
+            if (seconds < 90)
+            {
+                SelectFirstTableRow(1 + increase);
+                return;
+            }
+
             firstTableRow?.Click();
+            return;
+        }
+
+        private int ConvertToSeconds(string timeString)
+        {
+            string[] timeParts = timeString.Split(':');
+            if (timeParts.Length != 2)
+            {
+                throw new FormatException("Invalid time format. Expected format: mm:ss");
+            }
+
+            int minutes;
+            int seconds;
+            if (!int.TryParse(timeParts[0], out minutes) || !int.TryParse(timeParts[1], out seconds))
+            {
+                throw new FormatException("Invalid time format. Expected numeric values for minutes and seconds.");
+            }
+
+            return minutes * 60 + seconds;
         }
 
         private void Download()

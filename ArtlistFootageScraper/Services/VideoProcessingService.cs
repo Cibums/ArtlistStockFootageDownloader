@@ -113,6 +113,15 @@ namespace ArtlistFootageScraper.Services
             }
         }
 
+        public string CutAudioToBeLength(string audioFileName, float seconds)
+        {
+            _logger.LogInformation($"Cutting Audio");
+            string outputMp3Path = Path.Combine(Path.GetDirectoryName(audioFileName), Path.GetFileNameWithoutExtension(audioFileName) + "_trimmed.mp3");
+            string secondsFormatted = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            ExecuteFFmpeg($"-i {audioFileName} -ss 0 -t {secondsFormatted} -acodec copy {outputMp3Path}");
+            return outputMp3Path;
+        }
+
         public void ConcatenateVideos(string inputTextFilePath, string outputPath)
         {
             _logger.LogInformation($"Concatenating Videos");
