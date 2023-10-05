@@ -20,6 +20,7 @@ namespace ArtlistFootageScraper
 {
     public static class Program
     {
+        public static string VideoTitle = "render";
         private static string AnimalsList = Path.GetFullPath(@"..\..\..\animals.txt");
         private const string VideoFileName = "video.mp4";
         private const string ScenesFileName = "scenes.txt";
@@ -63,6 +64,7 @@ namespace ArtlistFootageScraper
             var scriptService = services.GetRequiredService<IScriptService>();
             ScriptResponse? response = await scriptService.GetScript(scriptWord, 10);
             if (response == null) throw new ArgumentNullException(nameof(response));
+            VideoTitle = response.Title;
             response.AddGeneralKeyword(scriptWord);
             return response;
         }
@@ -102,9 +104,9 @@ namespace ArtlistFootageScraper
             double fps = videoCapture.Get(CapProp.Fps);
             double videoDurationInSeconds = totalFrames / fps;
 
-            string trimmedMusicFilePath = processingService.CutAudioToBeLength(musicFilePath, (float)videoDurationInSeconds);
+            string trimmedMusicFilePath = processingService.CutAudioAndAdjustVolume(musicFilePath, (float)videoDurationInSeconds);
 
-            string render = utilityService.MergeVideoAndAudio(Path.Combine(OutputDir, VideoFileName), trimmedMusicFilePath, AppConfiguration.renderingsOutputPath + "\\" + fileService.ConvertToSnakeCase(script.Title) + ".mp4", 0.3f);
+            string render = processingService.AddMusicToVideo(Path.Combine(OutputDir, VideoFileName), trimmedMusicFilePath, AppConfiguration.renderingsOutputPath + "\\" + fileService.ConvertToSnakeCase(script.Title) + ".mp4");
 
             fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
 

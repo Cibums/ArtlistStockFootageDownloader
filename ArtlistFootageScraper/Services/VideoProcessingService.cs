@@ -57,7 +57,7 @@ namespace ArtlistFootageScraper.Services
             }
 
             using var capture = new VideoCapture(inputPath);
-            var cropRect = CalculateCropRectangle(capture, data);
+            var cropRect = CalculateCropRectangle(capture, data) ?? new Rectangle(80, 60, 607, 1080);
 
             string outputFile = $"{_outputPath}/output.mp4";
 
@@ -71,7 +71,7 @@ namespace ArtlistFootageScraper.Services
             return _fileService.GetLatestChangedFile(_outputPath);
         }
 
-        private Rectangle CalculateCropRectangle(VideoCapture capture, OptimizedFootageData data)
+        private Rectangle? CalculateCropRectangle(VideoCapture capture, OptimizedFootageData data)
         {
             _logger.LogInformation($"Calculating Focus Point");
             int originalWidth = (int)capture.Get(Emgu.CV.CvEnum.CapProp.FrameWidth);
@@ -84,6 +84,11 @@ namespace ArtlistFootageScraper.Services
             startX = Math.Max(startX, 0);
             startY = Math.Max(startY, 0);
             desiredWidth = (startX + desiredWidth > originalWidth) ? (originalWidth - startX) : desiredWidth;
+
+            if (desiredWidth == 0 || originalHeight == 0)
+            {
+                return null;
+            }
 
             return new Rectangle(startX, startY, desiredWidth, originalHeight);
         }
@@ -113,12 +118,21 @@ namespace ArtlistFootageScraper.Services
             }
         }
 
-        public string CutAudioToBeLength(string audioFileName, float seconds)
+        public string AddMusicToVideo(string inputVideo, string musicFilePath, string? output = null)
+        {
+            _logger.LogInformation($"Adding Music");
+            string outputPath = output ?? Path.Combine(AppConfiguration.renderingsOutputPath, _fileService.ConvertToSnakeCase(Program.VideoTitle) + ".mp4");
+            ExecuteFFmpeg($"-i \"{inputVideo}\" -i \"{musicFilePath}\" -filter_complex \"[0:a][1:a]amerge=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy -c:a aac \"{outputPath}\"");
+            return outputPath;
+        }
+
+        public string CutAudioAndAdjustVolume(string audioFileName, float seconds, float volume = 0.3f)
         {
             _logger.LogInformation($"Cutting Audio");
             string outputMp3Path = Path.Combine(Path.GetDirectoryName(audioFileName), Path.GetFileNameWithoutExtension(audioFileName) + "_trimmed.mp3");
             string secondsFormatted = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            ExecuteFFmpeg($"-i {audioFileName} -ss 0 -t {secondsFormatted} -acodec copy {outputMp3Path}");
+            string volumeFormatted = volume.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            ExecuteFFmpeg($"-i \"{audioFileName}\" -ss 0 -t \"{secondsFormatted}\" -af \"volume={volumeFormatted}\" -acodec libmp3lame \"{outputMp3Path}\"");
             return outputMp3Path;
         }
 
