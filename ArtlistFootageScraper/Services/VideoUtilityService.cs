@@ -42,10 +42,10 @@ namespace ArtlistFootageScraper.Services
         /// <summary>
         /// Merges video and audio.
         /// </summary>
-        public string MergeVideoAndAudio(string videoPath, string audioPath)
+        public string MergeVideoAndAudio(string videoPath, string audioPath, string? output = null)
         {
             var rndNumber = new Random().Next(0, 10000000);
-            var outputFilePath = Path.Combine(outputPath, $"{rndNumber}merged_output.mp4");
+            var outputFilePath = output ?? Path.Combine(outputPath, $"{rndNumber}merged_output.mp4");
             var ffmpegExecutablePath = Path.Combine(AppConfiguration.FFMPEG_EXE_PATH, "ffmpeg.exe");
 
             try
@@ -95,10 +95,10 @@ namespace ArtlistFootageScraper.Services
         public List<Point> ExtractPointsBetweenIndexes(List<Point> points, int startIndex, int endIndex)
         {
             if (points == null)
-                throw new ArgumentNullException(nameof(points));
+                return null;
 
             if (startIndex < 0 || startIndex >= points.Count || endIndex < 0 || startIndex > endIndex)
-                throw new ArgumentOutOfRangeException("Invalid start or end index.");
+                return null;
 
             try
             {

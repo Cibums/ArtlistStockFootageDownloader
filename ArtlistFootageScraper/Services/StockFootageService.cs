@@ -202,41 +202,12 @@ namespace ArtlistFootageScraper.Services
             hdPreviewButton?.Click();
 
             // Wait for the download to start
-            WaitForDownloadStart(downloadDirectory);
+            _fileService.WaitForDownloadStart(downloadDirectory);
             _logger.LogInformation("Download Started");
 
-            WaitForDownloadCompletion(downloadDirectory);
+            _fileService.WaitForDownloadCompletion(downloadDirectory);
             _logger.LogInformation("Download Completed");
             return null;
-        }
-
-        public void WaitForDownloadStart(string directory)
-        {
-            var initialFiles = new HashSet<string>(Directory.GetFiles(directory));
-            var end = DateTime.Now.AddMinutes(1);  // 1 minute timeout
-            while (DateTime.Now < end)
-            {
-                var currentFiles = new HashSet<string>(Directory.GetFiles(directory));
-                if (currentFiles.Count > initialFiles.Count ||
-                    currentFiles.Except(initialFiles).Any(f => f.EndsWith(".crdownload")))
-                    return;
-                Thread.Sleep(500); // Check every half-second
-            }
-            _logger.LogError("Download did not start within expected time.");
-            throw new TimeoutException("Download did not start within expected time.");
-        }
-
-        public void WaitForDownloadCompletion(string directory)
-        {
-            var end = DateTime.Now.AddMinutes(5);  // 5 minutes timeout, adjust as needed
-            while (DateTime.Now < end)
-            {
-                if (!Directory.GetFiles(directory, "*.crdownload").Any())
-                    return;
-                Thread.Sleep(1000); // Check every second
-            }
-            _logger.LogError("Download did not complete within expected time.");
-            throw new TimeoutException("Download did not complete within expected time.");
         }
     }
 }

@@ -13,7 +13,7 @@ namespace ArtlistFootageScraper
     public class ScriptResponse
     {
         public string? Title { get; set; }
-        public string? SoundtrackPrompt { get; set; }
+        public string[]? Soundtrack_Prompt { get; set; }
 
         public ScriptScene[]? Scenes { get; set; }
 

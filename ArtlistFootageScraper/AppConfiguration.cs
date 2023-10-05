@@ -5,6 +5,8 @@ namespace ArtlistFootageScraper
     public static class AppConfiguration
     {
         public static readonly string stockFootageOutputPath = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
+        public static readonly string musicOutputPath = Path.Combine(Directory.GetCurrentDirectory(), "music");
+        public static readonly string renderingsOutputPath = Path.Combine(Directory.GetCurrentDirectory(), "renders");
         public static string FIRST_NAME { get; private set; } = "";
         public static string EMAIL { get; private set; } = "";
         public static string PASSWORD { get; private set; } = "";

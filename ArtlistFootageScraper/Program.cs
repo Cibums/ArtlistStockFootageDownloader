@@ -10,6 +10,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using WebDriverManager.DriverConfigs.Impl;
 using static System.Globalization.CultureInfo;
 
@@ -26,7 +27,6 @@ namespace ArtlistFootageScraper
         {
             using var host = CreateHostBuilder(args).Build();
             await ExecuteVideoCreationAsync(host.Services);
-            OpenMediaFile(Path.Combine(OutputDir, VideoFileName));
             Environment.Exit(0);
         }
 
@@ -37,8 +37,11 @@ namespace ArtlistFootageScraper
 
             var script = await GetScript(services);
             if (script == null) return;
+            if (script.Soundtrack_Prompt == null) return;
 
-            await RenderVideo(script, services);
+            string render = await RenderVideo(script, services);
+
+            OpenMediaFile(render);
         }
 
         private static void DeleteExistingFiles(IFileService fileService)
@@ -62,11 +65,14 @@ namespace ArtlistFootageScraper
             return response;
         }
 
-        private static async Task RenderVideo(ScriptResponse script, IServiceProvider services)
+        private static async Task<string> RenderVideo(ScriptResponse script, IServiceProvider services)
         {
             var processingService = services.GetRequiredService<IVideoProcessingService>();
             var ttsService = services.GetRequiredService<ITextToSpeechService>();
             var fileService = services.GetRequiredService<IFileService>();
+
+            var musicService = services.GetRequiredService<IMusicService>();
+            string musicFilePath = musicService.DownloadMusic(script.Soundtrack_Prompt[0], script.Soundtrack_Prompt[1], script.Soundtrack_Prompt[2]);
 
             foreach (var scene in script.Scenes)
             {
@@ -83,8 +89,19 @@ namespace ArtlistFootageScraper
             }
 
             processingService.ConcatenateVideos(Path.Combine(OutputDir, ScenesFileName), Path.Combine(OutputDir, VideoFileName));
+
+            var utilityService = services.GetRequiredService<IVideoUtilityService>();
+
+            if (!Directory.Exists(AppConfiguration.renderingsOutputPath)) Directory.CreateDirectory(AppConfiguration.renderingsOutputPath);
+
+            string render = utilityService.MergeVideoAndAudio(Path.Combine(OutputDir, VideoFileName), musicFilePath, AppConfiguration.renderingsOutputPath + "\\" + fileService.ConvertToSnakeCase(script.Title) + ".mp4");
+
             fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
+
+            return render;
         }
+
+
 
         static string? RenderScene(string footagePath, string speechPath, IVideoProcessingService processingService)
         {
@@ -124,7 +141,7 @@ namespace ArtlistFootageScraper
             return stockFootageService.GenerateStockFootageFromKeywordsSynchronously(keywords, downloadDirectory);
         }
 
-        static ChromeOptions SetupChromeOptions(string downloadDirectory)
+        public static ChromeOptions SetupChromeOptions(string downloadDirectory)
         {
             var options = new ChromeOptions();
 
@@ -134,7 +151,7 @@ namespace ArtlistFootageScraper
             options.AddUserProfilePreference("download.directory_upgrade", true);
             options.AddUserProfilePreference("safebrowsing.enabled", true);
             options.AcceptInsecureCertificates = true;
-            options.AddArgument("--headless");
+            //options.AddArgument("--headless");
 
             return options;
         }
@@ -168,6 +185,7 @@ namespace ArtlistFootageScraper
                 services.AddSingleton<IFileService, FileService>();
                 services.AddSingleton<IChatGPTService, ChatGptService>();
                 services.AddSingleton<IScriptService, ScriptService>();
+                services.AddSingleton<IMusicService, MusicService>();
             });
     }
 }

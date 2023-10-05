@@ -1,19 +1,55 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ArtlistFootageScraper.Services
 {
     public class FileService : IFileService
     {
+        private readonly ILogger _logger;
+
+        public FileService(ILogger<IFileService> logger)
+        {
+            _logger = logger;
+        }
+
         public void AppendAllText(string file, string text)
         {
             if (string.IsNullOrEmpty(file)) return;
             if (string.IsNullOrEmpty(text)) return;
             File.AppendAllText(file, text);
+        }
+
+        public string RenameFileToSnakeCase(string filePath)
+        {
+            // Get the directory, filename without extension, and extension
+            string directory = Path.GetDirectoryName(filePath);
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(filePath);
+            string extension = Path.GetExtension(filePath);
+
+            // Convert the filename to snake case
+            string snakeCaseFileName = ConvertToSnakeCase(fileNameWithoutExtension);
+
+            // Construct the new file path
+            string newFilePath = Path.Combine(directory, snakeCaseFileName + extension);
+
+            // Rename the file by moving it to the new path
+            File.Move(filePath, newFilePath);
+
+            return newFilePath;
+        }
+
+        public string ConvertToSnakeCase(string input)
+        {
+            string lowerCaseInput = input.ToLower();
+            string alphanumericInput = Regex.Replace(lowerCaseInput, @"[^\w\s]", string.Empty);
+            string snakeCaseOutput = alphanumericInput.Replace(' ', '_');
+            return snakeCaseOutput;
         }
 
         public void DeleteIfExists(string filePath)
@@ -70,6 +106,35 @@ namespace ArtlistFootageScraper.Services
             }
 
             return null;
+        }
+
+        public void WaitForDownloadStart(string directory)
+        {
+            var initialFiles = new HashSet<string>(Directory.GetFiles(directory));
+            var end = DateTime.Now.AddMinutes(1);  // 1 minute timeout
+            while (DateTime.Now < end)
+            {
+                var currentFiles = new HashSet<string>(Directory.GetFiles(directory));
+                if (currentFiles.Count > initialFiles.Count ||
+                    currentFiles.Except(initialFiles).Any(f => f.EndsWith(".crdownload")))
+                    return;
+                Thread.Sleep(500); // Check every half-second
+            }
+            _logger.LogError("Download did not start within expected time.");
+            throw new TimeoutException("Download did not start within expected time.");
+        }
+
+        public void WaitForDownloadCompletion(string directory)
+        {
+            var end = DateTime.Now.AddMinutes(5);  // 5 minutes timeout, adjust as needed
+            while (DateTime.Now < end)
+            {
+                if (!Directory.GetFiles(directory, "*.crdownload").Any())
+                    return;
+                Thread.Sleep(1000); // Check every second
+            }
+            _logger.LogError("Download did not complete within expected time.");
+            throw new TimeoutException("Download did not complete within expected time.");
         }
     }
 }

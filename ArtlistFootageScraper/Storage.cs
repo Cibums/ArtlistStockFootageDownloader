@@ -7,5 +7,7 @@
 
         // The dictionary to hold TTS input as the key and local file path as the value
         public Dictionary<string, string> SpeechLinks { get; set; } = new Dictionary<string, string>();
+        // The dictionary to hold background music keywords as the key and local file path as the value
+        public Dictionary<string, string> MusicLinks { get; set; } = new Dictionary<string, string>();
     }
 }
