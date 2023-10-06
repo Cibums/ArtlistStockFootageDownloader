@@ -126,7 +126,15 @@ namespace ArtlistFootageScraper.Services
             return outputPath;
         }
 
-        public string CutAudioAndAdjustVolume(string audioFileName, float seconds, float volume = 0.3f)
+        public string NormalizeAudioVolume(string audioFileName)
+        {
+            _logger.LogInformation($"Normalizing audio volume");
+            string outputMp3Path = Path.Combine(Path.GetDirectoryName(audioFileName), Path.GetFileNameWithoutExtension(audioFileName) + "_normalized.mp3");
+            ExecuteFFmpeg($"-i {audioFileName} -af loudnorm=I=-16:TP=-1.5:LRA=11:print_format=summary -acodec libmp3lame {outputMp3Path}");
+            return outputMp3Path;
+        }
+
+        public string CutAudioAndAdjustVolume(string audioFileName, float seconds, float volume = 1.0f)
         {
             _logger.LogInformation($"Cutting Audio");
             string outputMp3Path = Path.Combine(Path.GetDirectoryName(audioFileName), Path.GetFileNameWithoutExtension(audioFileName) + "_trimmed.mp3");

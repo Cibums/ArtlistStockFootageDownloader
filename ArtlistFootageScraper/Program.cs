@@ -75,9 +75,6 @@ namespace ArtlistFootageScraper
             var ttsService = services.GetRequiredService<ITextToSpeechService>();
             var fileService = services.GetRequiredService<IFileService>();
 
-            var musicService = services.GetRequiredService<IMusicService>();
-            string musicFilePath = musicService.DownloadMusic(script.Soundtrack_Prompt[0], script.Soundtrack_Prompt[1], script.Soundtrack_Prompt[2]);
-
             foreach (var scene in script.Scenes)
             {
                 if (scene.Message == null || scene.Keywords == null) continue;
@@ -94,8 +91,6 @@ namespace ArtlistFootageScraper
 
             processingService.ConcatenateVideos(Path.Combine(OutputDir, ScenesFileName), Path.Combine(OutputDir, VideoFileName));
 
-            var utilityService = services.GetRequiredService<IVideoUtilityService>();
-
             if (!Directory.Exists(AppConfiguration.renderingsOutputPath)) Directory.CreateDirectory(AppConfiguration.renderingsOutputPath);
 
             //Getting video length
@@ -104,7 +99,11 @@ namespace ArtlistFootageScraper
             double fps = videoCapture.Get(CapProp.Fps);
             double videoDurationInSeconds = totalFrames / fps;
 
-            string trimmedMusicFilePath = processingService.CutAudioAndAdjustVolume(musicFilePath, (float)videoDurationInSeconds);
+            var musicService = services.GetRequiredService<IMusicService>();
+            string musicFilePath = musicService.DownloadMusic(script.Soundtrack_Prompt[0], script.Soundtrack_Prompt[1], script.Soundtrack_Prompt[2]);
+
+            string normalizedMusicFilePath = processingService.NormalizeAudioVolume(musicFilePath);
+            string trimmedMusicFilePath = processingService.CutAudioAndAdjustVolume(normalizedMusicFilePath, (float)videoDurationInSeconds);
 
             string render = processingService.AddMusicToVideo(Path.Combine(OutputDir, VideoFileName), trimmedMusicFilePath, AppConfiguration.renderingsOutputPath + "\\" + fileService.ConvertToSnakeCase(script.Title) + ".mp4");
 

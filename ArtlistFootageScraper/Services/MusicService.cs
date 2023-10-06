@@ -112,11 +112,28 @@ namespace ArtlistFootageScraper.Services
 
         private void SelectFirstTableRow(int increase = 0)
         {
-            IWebElement? firstTableRow = _wait.Until(driver =>
+            IWebElement? firstTableRow = null;
+            bool success = false;
+            int tries = 0;
+            while (!success && tries < 5)
             {
-                var elements = driver.FindElements(By.XPath("//tbody[@class='filtered-song-list-body']/tr[@class='search-result-row'][1]"));
-                return elements.Count > 0 && elements[0 + increase].Displayed && elements[0 + increase].Enabled ? elements[0 + increase] : null;
-            });
+                try
+                {
+                    firstTableRow = _wait.Until(driver =>
+                    {
+                        var elements = driver.FindElements(By.XPath("//tbody[@class='filtered-song-list-body']/tr[@class='search-result-row'][1]"));
+                        return elements.Count > 0 && elements[0 + increase].Displayed && elements[0 + increase].Enabled ? elements[0 + increase] : null;
+                    });
+                    success = true;  // Exit the loop if the wait is successful.
+                }
+                catch (WebDriverTimeoutException)
+                {
+                    _logger.LogWarning("Timeout waiting for table row. Retrying...");
+                    SelectOption("Tempo", "90-120");
+                    _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(15));
+                    tries++;
+                }
+            }
 
             string timeLength = "";
             if (firstTableRow != null)
