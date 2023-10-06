@@ -76,7 +76,7 @@ namespace ArtlistFootageScraper.Services
             foreach (string file in files)
             {
                 // Check if the filename contains the specified substring
-                if (Path.GetFileName(file).Contains("merged") || Path.GetFileName(file).Contains("convertedFps"))
+                if (Path.GetFileName(file).Contains("merged") || Path.GetFileName(file).Contains("convertedFps") || Path.GetExtension(file) == ".tmp")
                 {
                     try
                     {

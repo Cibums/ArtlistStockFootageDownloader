@@ -23,19 +23,21 @@ namespace ArtlistFootageScraper.Services
 
         public MusicService(ILogger<IMusicService> logger, IFileService fileService)
         {
-            _driver = CreateDriver();
             _logger = logger;
+            _driver = CreateDriver();
+            _wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(10));
             _fileService = fileService;
         }
 
         private IWebDriver CreateDriver()
         {
+            _logger.LogInformation("Creating Web Driver");
+
             //Chrome Options
             var options = Program.SetupChromeOptions(downloadDirectory);
 
             // Setup WebDriver
             IWebDriver webDriver = new ChromeDriver(options);
-            _wait = new WebDriverWait(webDriver, TimeSpan.FromSeconds(10));
 
             new WebDriverManager.DriverManager().SetUpDriver(new ChromeConfig());
             webDriver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
@@ -163,7 +165,7 @@ namespace ArtlistFootageScraper.Services
                 return;
             }
 
-            if (seconds < 90)
+            if (seconds < Math.Round(AppConfiguration.videoLengthSeconds * 1.2f))
             {
                 SelectFirstTableRow(1 + increase);
                 return;
@@ -178,6 +180,7 @@ namespace ArtlistFootageScraper.Services
             string[] timeParts = timeString.Split(':');
             if (timeParts.Length != 2)
             {
+                _logger.LogError("Invalid time format. Expected format: mm:ss");
                 throw new FormatException("Invalid time format. Expected format: mm:ss");
             }
 
@@ -185,6 +188,7 @@ namespace ArtlistFootageScraper.Services
             int seconds;
             if (!int.TryParse(timeParts[0], out minutes) || !int.TryParse(timeParts[1], out seconds))
             {
+                _logger.LogError("Invalid time format. Expected numeric values for minutes and seconds.");
                 throw new FormatException("Invalid time format. Expected numeric values for minutes and seconds.");
             }
 

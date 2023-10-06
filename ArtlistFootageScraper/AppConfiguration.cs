@@ -4,6 +4,7 @@ namespace ArtlistFootageScraper
 {
     public static class AppConfiguration
     {
+        public static readonly int videoLengthSeconds = 120;
         public static readonly string stockFootageOutputPath = Path.Combine(Directory.GetCurrentDirectory(), "stock-footage");
         public static readonly string musicOutputPath = Path.Combine(Directory.GetCurrentDirectory(), "music");
         public static readonly string renderingsOutputPath = Path.Combine(Directory.GetCurrentDirectory(), "renders");

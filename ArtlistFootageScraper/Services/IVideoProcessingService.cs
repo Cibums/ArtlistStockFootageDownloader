@@ -18,7 +18,7 @@
         void ConcatenateVideos(string inputTextFilePath, string outputPath);
 
         string NormalizeAudioVolume(string audioFile);
-        string CutAudioAndAdjustVolume(string audioFileName, float seconds, float volume = 0.3f);
+        string AdjustVolume(string audioFileName, float volume = 0.3f);
         string AddMusicToVideo(string inputVideo, string musicFilePath, string? output = null);
     }
 }

@@ -29,15 +29,16 @@ namespace ArtlistFootageScraper
         private static async Task Main(string[] args)
         {
             using var host = CreateHostBuilder(args).Build();
+
+            var fileService = host.Services.GetRequiredService<IFileService>();
+            DeleteExistingFiles(fileService);
+
             await ExecuteVideoCreationAsync(host.Services);
             Environment.Exit(0);
         }
 
         private static async Task ExecuteVideoCreationAsync(IServiceProvider services)
         {
-            var fileService = services.GetRequiredService<IFileService>();
-            DeleteExistingFiles(fileService);
-
             var script = await GetScript(services);
             if (script == null) return;
             if (script.Soundtrack_Prompt == null) return;
@@ -62,7 +63,7 @@ namespace ArtlistFootageScraper
             string scriptWord = animals[randomIndex];
 
             var scriptService = services.GetRequiredService<IScriptService>();
-            ScriptResponse? response = await scriptService.GetScript(scriptWord, 10);
+            ScriptResponse? response = await scriptService.GetScript(scriptWord, AppConfiguration.videoLengthSeconds);
             if (response == null) throw new ArgumentNullException(nameof(response));
             VideoTitle = response.Title;
             response.AddGeneralKeyword(scriptWord);
@@ -93,19 +94,13 @@ namespace ArtlistFootageScraper
 
             if (!Directory.Exists(AppConfiguration.renderingsOutputPath)) Directory.CreateDirectory(AppConfiguration.renderingsOutputPath);
 
-            //Getting video length
-            VideoCapture videoCapture = new VideoCapture(Path.Combine(OutputDir, VideoFileName));
-            double totalFrames = videoCapture.Get(CapProp.FrameCount);
-            double fps = videoCapture.Get(CapProp.Fps);
-            double videoDurationInSeconds = totalFrames / fps;
-
             var musicService = services.GetRequiredService<IMusicService>();
             string musicFilePath = musicService.DownloadMusic(script.Soundtrack_Prompt[0], script.Soundtrack_Prompt[1], script.Soundtrack_Prompt[2]);
 
             string normalizedMusicFilePath = processingService.NormalizeAudioVolume(musicFilePath);
-            string trimmedMusicFilePath = processingService.CutAudioAndAdjustVolume(normalizedMusicFilePath, (float)videoDurationInSeconds);
+            string adjustedMusicFilePath = processingService.AdjustVolume(normalizedMusicFilePath, 0.3f);
 
-            string render = processingService.AddMusicToVideo(Path.Combine(OutputDir, VideoFileName), trimmedMusicFilePath, AppConfiguration.renderingsOutputPath + "\\" + fileService.ConvertToSnakeCase(script.Title) + ".mp4");
+            string render = processingService.AddMusicToVideo(Path.Combine(OutputDir, VideoFileName), adjustedMusicFilePath, AppConfiguration.renderingsOutputPath + "\\" + fileService.ConvertToSnakeCase(script.Title) + ".mp4");
 
             fileService.DeleteIfExists(Path.Combine(OutputDir, ScenesFileName));
 

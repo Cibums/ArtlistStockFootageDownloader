@@ -122,7 +122,7 @@ namespace ArtlistFootageScraper.Services
         {
             _logger.LogInformation($"Adding Music");
             string outputPath = output ?? Path.Combine(AppConfiguration.renderingsOutputPath, _fileService.ConvertToSnakeCase(Program.VideoTitle) + ".mp4");
-            ExecuteFFmpeg($"-i \"{inputVideo}\" -i \"{musicFilePath}\" -filter_complex \"[0:a][1:a]amerge=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy -c:a aac \"{outputPath}\"");
+            ExecuteFFmpeg($"-i \"{inputVideo}\" -i \"{musicFilePath}\" -filter_complex \"[0:a][1:a]amerge=inputs=2[a]\" -map 0:v -map \"[a]\" -c:v copy -c:a aac -shortest \"{outputPath}\"");
             return outputPath;
         }
 
@@ -134,13 +134,12 @@ namespace ArtlistFootageScraper.Services
             return outputMp3Path;
         }
 
-        public string CutAudioAndAdjustVolume(string audioFileName, float seconds, float volume = 1.0f)
+        public string AdjustVolume(string audioFileName, float volume = 0.3f)
         {
             _logger.LogInformation($"Cutting Audio");
             string outputMp3Path = Path.Combine(Path.GetDirectoryName(audioFileName), Path.GetFileNameWithoutExtension(audioFileName) + "_trimmed.mp3");
-            string secondsFormatted = seconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
             string volumeFormatted = volume.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            ExecuteFFmpeg($"-i \"{audioFileName}\" -ss 0 -t \"{secondsFormatted}\" -af \"volume={volumeFormatted}\" -acodec libmp3lame \"{outputMp3Path}\"");
+            ExecuteFFmpeg($"-i \"{audioFileName}\" -af \"volume={volumeFormatted}\" -acodec libmp3lame \"{outputMp3Path}\"");
             return outputMp3Path;
         }
 
